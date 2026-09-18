@@ -259,17 +259,18 @@ class AttendanceTest extends TestCase
         ]);
     }
 
-    public function test_manual_attendance_matches_unique_per_type_date(): void
+    public function test_manual_lesson_updates_existing_for_same_schedule(): void
     {
         $schedule = $this->makeSchedule($this->tenantA->id, $this->studentA->academic_year_id, null, $this->studentA->rombel_id, '2026-09-15');
 
         Attendance::factory()->create([
             'tenant_id' => $this->tenantA->id,
-            'schedule_id' => null,
+            'schedule_id' => $schedule->id,
             'student_id' => $this->studentA->id,
             'type' => 'lesson',
             'date' => '2026-09-15',
-            'source' => 'manual',
+            'source' => 'scan',
+            'status' => 'hadir',
         ]);
 
         $this->actingAs($this->adminA)
@@ -277,8 +278,9 @@ class AttendanceTest extends TestCase
                 'student_id' => $this->studentA->id,
                 'schedule_id' => $schedule->id,
                 'type' => 'lesson',
-                'status' => 'hadir',
+                'status' => 'sakit',
                 'date' => '2026-09-15',
+                'note' => 'Koreksi',
             ])
             ->assertSessionHas('success');
 
@@ -287,9 +289,39 @@ class AttendanceTest extends TestCase
             'student_id' => $this->studentA->id,
             'schedule_id' => $schedule->id,
             'type' => 'lesson',
-            'status' => 'hadir',
+            'status' => 'sakit',
+            'source' => 'manual',
+            'note' => 'Koreksi',
             'date' => '2026-09-15',
         ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'update',
+            'entity_type' => 'Attendance',
+            'entity_id' => Attendance::where('student_id', $this->studentA->id)->firstOrFail()->id,
+        ]);
+    }
+
+    public function test_manual_lesson_records_separate_rows_per_schedule(): void
+    {
+        $first = $this->makeSchedule($this->tenantA->id, null, null, $this->studentA->rombel_id, '2026-09-15');
+        $second = $this->makeSchedule($this->tenantA->id, null, null, $this->studentA->rombel_id, '2026-09-15');
+
+        foreach ([$first, $second] as $schedule) {
+            $this->actingAs($this->adminA)
+                ->post(route('attendance.storeManual'), [
+                    'student_id' => $this->studentA->id,
+                    'schedule_id' => $schedule->id,
+                    'type' => 'lesson',
+                    'status' => 'hadir',
+                    'date' => '2026-09-15',
+                ])
+                ->assertSessionHas('success');
+        }
+
+        $this->assertDatabaseCount('attendances', 2);
+        $this->assertDatabaseHas('attendances', ['schedule_id' => $first->id, 'type' => 'lesson']);
+        $this->assertDatabaseHas('attendances', ['schedule_id' => $second->id, 'type' => 'lesson']);
     }
 
     public function test_gate_in_and_gate_out_separate_entries(): void
@@ -382,6 +414,114 @@ class AttendanceTest extends TestCase
             ->assertSessionHas('success');
     }
 
+    public function test_lesson_scan_records_multiple_schedules_same_day(): void
+    {
+        $first = $this->makeSchedule($this->tenantA->id, null, null, $this->studentA->rombel_id, now()->toDateString());
+        $second = $this->makeSchedule($this->tenantA->id, null, null, $this->studentA->rombel_id, now()->toDateString());
+
+        foreach ([$first, $second] as $schedule) {
+            $this->actingAs($this->adminA)
+                ->post(route('attendance.record', ['mode' => 'lesson']), [
+                    'payload' => 'SS:0039123456',
+                    'schedule_id' => $schedule->id,
+                ])
+                ->assertSessionHas('success');
+        }
+
+        $this->assertDatabaseCount('attendances', 2);
+        $this->assertDatabaseHas('attendances', ['schedule_id' => $first->id, 'student_id' => $this->studentA->id]);
+        $this->assertDatabaseHas('attendances', ['schedule_id' => $second->id, 'student_id' => $this->studentA->id]);
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.record', ['mode' => 'lesson']), [
+                'payload' => 'SS:0039123456',
+                'schedule_id' => $first->id,
+            ])
+            ->assertSessionHas('info');
+
+        $this->assertDatabaseCount('attendances', 2);
+    }
+
+    public function test_lesson_scan_rejects_outside_schedule_time(): void
+    {
+        $schedule = $this->makeSchedule(
+            $this->tenantA->id,
+            null,
+            null,
+            $this->studentA->rombel_id,
+            now()->toDateString(),
+            Carbon::now()->addHours(2)->format('H:i:s'),
+            Carbon::now()->addHours(3)->format('H:i:s'),
+        );
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.record', ['mode' => 'lesson']), [
+                'payload' => 'SS:0039123456',
+                'schedule_id' => $schedule->id,
+            ])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseCount('attendances', 0);
+    }
+
+    public function test_lesson_scan_accepts_within_tolerance_before_start(): void
+    {
+        $schedule = $this->makeSchedule(
+            $this->tenantA->id,
+            null,
+            null,
+            $this->studentA->rombel_id,
+            now()->toDateString(),
+            Carbon::now()->addMinutes(10)->format('H:i:s'),
+            Carbon::now()->addHours(1)->format('H:i:s'),
+        );
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.record', ['mode' => 'lesson']), [
+                'payload' => 'SS:0039123456',
+                'schedule_id' => $schedule->id,
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('attendances', ['schedule_id' => $schedule->id, 'type' => 'lesson']);
+    }
+
+    public function test_scan_create_writes_audit_log(): void
+    {
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.record', ['mode' => 'gate_in']), ['payload' => 'SS:0039123456'])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'create',
+            'entity_type' => 'Attendance',
+            'user_id' => $this->adminA->id,
+        ]);
+    }
+
+    public function test_lesson_attendance_uses_schedule_academic_year(): void
+    {
+        $otherYear = AcademicYear::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'is_active' => false,
+        ]);
+
+        $schedule = $this->makeSchedule($this->tenantA->id, $otherYear->id, null, $this->studentA->rombel_id, now()->toDateString());
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.record', ['mode' => 'lesson']), [
+                'payload' => 'SS:0039123456',
+                'schedule_id' => $schedule->id,
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('attendances', [
+            'student_id' => $this->studentA->id,
+            'schedule_id' => $schedule->id,
+            'academic_year_id' => $otherYear->id,
+        ]);
+    }
+
     public function test_manual_lesson_rejects_day_mismatch_with_schedule(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
@@ -402,7 +542,7 @@ class AttendanceTest extends TestCase
         $this->assertDatabaseCount('attendances', 0);
     }
 
-    private function makeSchedule(string $tenantId, ?int $yearId, ?int $userId, int $rombelId, string $date): Schedule
+    private function makeSchedule(string $tenantId, ?int $yearId, ?int $userId, int $rombelId, string $date, ?string $start = null, ?string $end = null): Schedule
     {
         $subject = Subject::factory()->create(['tenant_id' => $tenantId, 'name' => 'Mapel '.fake()->unique()->bothify('##')]);
 
@@ -413,6 +553,8 @@ class AttendanceTest extends TestCase
             'subject_id' => $subject->id,
             'rombel_id' => $rombelId,
             'day_of_week' => (int) Carbon::parse($date)->isoWeekday(),
+            'start_time' => $start ?? Carbon::now()->subMinutes(30)->format('H:i:s'),
+            'end_time' => $end ?? Carbon::now()->addMinutes(30)->format('H:i:s'),
         ]);
     }
 }

@@ -30,7 +30,7 @@ Arsitektur mendukung **multi-tenant** (banyak sekolah), namun saat ini dioperasi
 | Database runtime | MySQL (`smart_school`) |
 | Database tes | SQLite in-memory (`:memory:`) |
 | QR Code | `endroid/qr-code` ^6.0 |
-| Testing | PHPUnit 11 (132 tes) |
+| Testing | PHPUnit 11 (138 tes) |
 | Style PHP | Laravel Pint |
 | Lingkungan dev | Laragon (Windows), tanpa Docker/Sail |
 
@@ -115,7 +115,7 @@ Daftar role: `super_admin`, `admin_sekolah`, `guru`, `siswa`, `orang_tua`.
 | `Journal` | `journals` | `user_id`, `subject_id`, `rombel_id`, `schedule_id`, `date`, `topic`, `notes`, `attendance_filled`, `status` (`draft/closed`); unique (`user_id`, `schedule_id`, `date`) |
 | `Assessment` | `assessments` | `academic_year_id`, `subject_id`, `rombel_id`, `teacher_id`, `category` (`tugas/formatif/uts/uas`), `title`, `date`, `max_score`, `weight_percentage` |
 | `AssessmentGrade` | `assessment_grades` | `assessment_id`, `student_id`, `score`, `note`; unique (`assessment_id`, `student_id`) |
-| `Attendance` | `attendances` | `student_id`, `recorded_by`, `schedule_id` (nullable, FK untuk hadir pelajaran), `type` (`gate_in/gate_out/lesson`), `status` (`hadir/sakit/izin/alpha`), `date`, `time`, `source`, `note`; unique (`student_id`, `type`, `date`) |
+| `Attendance` | `attendances` | `student_id`, `recorded_by`, `schedule_id` (nullable, FK untuk hadir pelajaran), `type` (`gate_in/gate_out/lesson`), `status` (`hadir/sakit/izin/alpha`), `date`, `time`, `source`, `note`; unique (`student_id`, `schedule_id`, `date`) untuk absensi pelajaran, sedangkan gate didedupe di aplikasi per (`student_id`, `type`, `date`) |
 | `Assignment` | `assignments` | `academic_year_id`, `teacher_id`, `rombel_id`, `subject_id`, `title`, `description`, `deadline_at`, `attachment_path` |
 | `AssignmentSubmission` | `assignment_submissions` | `assignment_id`, `student_id`, `note`, `attachment_path`, `submitted_at`; unique (`assignment_id`, `student_id`) |
 | `EarlyWarningLog` | `early_warning_logs` | `student_id`, `type` (`absence_streak/attendance_rate/low_score`), `description`, `trigger_date`, `is_resolved`, `resolved_by`, `resolved_at` |
@@ -326,7 +326,7 @@ Prefix CLI PHP di Laragon: gunakan `& "C:\laragon\bin\php\php-8.3.31-Win32-vs16-
 
 ## 12. Testing
 
-Status saat dokumentasi ini ditulis: **132 tes, 324 assertion, semuanya PASS**; Pint lulus; Vite build bersih.
+Status saat dokumentasi ini ditulis: **138 tes, 345 assertion, semuanya PASS**; Pint lulus; Vite build bersih.
 
 File tes fitur:
 
@@ -431,6 +431,19 @@ Fokus: integritas entitas rombel/siswa, relasi jadwal-absensi, dan riwayat perpi
 
 Catatan: `assessment_grades`, `attendances`, `assignment_submissions`, `early_warning_logs`, `student_parents`, dan `student_rombel_histories` semuanya `cascadeOnDelete` terhadap `student_id`; guard controller mencegah kehilangan data historis lewat UI.
 
+### Wave 4 — Absensi Core (2026-09-18)
+
+Fokus: rantai identitas → jadwal, validasi jam, duplikasi, koreksi, dan audit pada modul absensi.
+
+| Temuan | Perbaikan |
+| --- | --- |
+| Satu siswa hanya bisa punya satu absensi `lesson` per hari | Unique lama (`student_id`, `type`, `date`) menabrak absensi pelajaran ganda. Migrasi `2026_09_18_100002` menggantinya dengan unique (`student_id`, `schedule_id`, `date`) sehingga tiap jadwal pelajaran tercatat terpisah. Dedupe `gate_in`/`gate_out` tetap per (`student_id`, `type`, `date`) di aplikasi |
+| Absensi pelajaran bisa discan di luar jam pelajaran | `guardLessonSchedule` kini (khusus scan) menolak pencatatan di luar `start_time`–`end_time`, dengan toleransi 15 menit lebih awal dan 1 menit setelah jam selesai. Koreksi manual dikecualikan agar admin/guru bisa memperbaiki data lampau |
+| `academic_year_id` absensi pelajaran selalu tahun ajaran aktif | Untuk absensi ber-type `lesson`, tahun ajaran diambil dari jadwal (`schedule.academic_year_id`) sehingga koreksi data tahun lama tetap tersimpan pada tahun ajaran yang benar. Gate tetap memakai tahun ajaran aktif |
+| Scan absensi tidak meninggalkan jejak audit | `recordOne` (jalur scan, termasuk scan massal) kini memanggil `log_audit('create', ...)`. Koreksi manual mencatat `old_values` → `new_values` pada `log_audit('update', ...)` |
+| Dedupe koreksi manual masih per tipe/tanggal | `storeManual` mencocokkan baris berdasarkan jadwal untuk type `lesson`, dan berdasarkan tipe/tanggal untuk gate — sejalan dengan aturan scan |
+
 ## 16. Catatan Riwayat Perbaikan Lain
 
 - `2026_09_18_100001_create_student_rombel_histories_table` menambah tabel riwayat perpindahan rombel siswa (model `StudentRombelHistory`); ditampilkan pada halaman detail siswa.
+- `2026_09_18_100002_adjust_attendances_unique_per_schedule` mengganti unique absensi menjadi per (`student_id`, `schedule_id`, `date`) agar absensi pelajaran ganda dalam sehari dapat tercatat.

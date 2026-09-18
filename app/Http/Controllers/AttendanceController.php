@@ -20,6 +20,8 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
+    private const LESSON_SCAN_EARLY_MINUTES = 15;
+
     public function index(Request $request): View
     {
         $date = $request->input('date') ?: now()->toDateString();
@@ -184,31 +186,45 @@ class AttendanceController extends Controller
             }
         }
 
-        $existing = Attendance::where('student_id', $data['student_id'])
-            ->where('type', $data['type'])
-            ->whereDate('date', $data['date'])
-            ->first();
+        $schedule = $guard['schedule'];
+        $scheduleId = $schedule?->id;
+
+        $existingQuery = Attendance::where('student_id', $data['student_id'])
+            ->whereDate('date', $data['date']);
+
+        if ($data['type'] === 'lesson') {
+            $existingQuery->where('schedule_id', $scheduleId);
+        } else {
+            $existingQuery->where('type', $data['type']);
+        }
+
+        $existing = $existingQuery->first();
 
         if ($existing) {
-            DB::transaction(function () use ($existing, $data, $guard): void {
+            $tracked = ['status', 'time', 'source', 'note'];
+            $old = $existing->only($tracked);
+
+            DB::transaction(function () use ($existing, $data, $scheduleId): void {
                 $existing->update([
                     'status' => $data['status'],
                     'time' => now()->format('H:i:s'),
                     'source' => 'manual',
                     'note' => $data['note'] ?? null,
-                    'schedule_id' => $data['type'] === 'lesson' ? ($guard['schedule']->id ?? null) : $existing->schedule_id,
+                    'schedule_id' => $data['type'] === 'lesson' ? $scheduleId : $existing->schedule_id,
                 ]);
             });
 
-            log_audit('update', $existing);
+            log_audit('update', $existing, $old, $existing->only($tracked));
 
             return to_route('attendance.manual')->with('success', 'Data absensi diperbarui.');
         }
 
         $record = Attendance::create([
             'student_id' => $data['student_id'],
-            'academic_year_id' => AcademicYear::where('is_active', true)->value('id'),
-            'schedule_id' => $data['type'] === 'lesson' ? ($guard['schedule']->id ?? null) : null,
+            'academic_year_id' => $scheduleId !== null
+                ? $schedule?->academic_year_id
+                : AcademicYear::where('is_active', true)->value('id'),
+            'schedule_id' => $data['type'] === 'lesson' ? $scheduleId : null,
             'recorded_by' => auth()->id(),
             'type' => $data['type'],
             'status' => $data['status'],
@@ -237,9 +253,10 @@ class AttendanceController extends Controller
         }
 
         $schedule = null;
+        $date = now()->toDateString();
 
         if ($mode === 'lesson') {
-            $guard = $this->guardLessonSchedule($scheduleId, $student, now()->toDateString());
+            $guard = $this->guardLessonSchedule($scheduleId, $student, $date, true);
 
             if ($guard['error'] !== null) {
                 return ['outcome' => 'error', 'message' => $guard['error']];
@@ -248,10 +265,16 @@ class AttendanceController extends Controller
             $schedule = $guard['schedule'];
         }
 
-        $existing = Attendance::where('student_id', $student->id)
-            ->where('type', $mode)
-            ->whereDate('date', now())
-            ->first();
+        $existingQuery = Attendance::where('student_id', $student->id)
+            ->whereDate('date', $date);
+
+        if ($mode === 'lesson') {
+            $existingQuery->where('schedule_id', $schedule?->id);
+        } else {
+            $existingQuery->where('type', $mode);
+        }
+
+        $existing = $existingQuery->first();
 
         if ($existing) {
             return [
@@ -265,7 +288,7 @@ class AttendanceController extends Controller
         if ($mode === 'gate_out') {
             $hasGateIn = Attendance::where('student_id', $student->id)
                 ->where('type', 'gate_in')
-                ->whereDate('date', now())
+                ->whereDate('date', $date)
                 ->exists();
 
             if (! $hasGateIn) {
@@ -275,16 +298,19 @@ class AttendanceController extends Controller
 
         $attendance = Attendance::create([
             'student_id' => $student->id,
-            'academic_year_id' => AcademicYear::where('is_active', true)->value('id'),
+            'academic_year_id' => $schedule?->academic_year_id
+                ?? AcademicYear::where('is_active', true)->value('id'),
             'schedule_id' => $schedule?->id,
             'recorded_by' => auth()->id(),
             'type' => $mode,
             'status' => 'hadir',
-            'date' => now()->toDateString(),
+            'date' => $date,
             'time' => now()->format('H:i:s'),
             'source' => 'scan',
             'note' => $note,
         ]);
+
+        log_audit('create', $attendance);
 
         return [
             'outcome' => 'success',
@@ -333,7 +359,7 @@ class AttendanceController extends Controller
         );
     }
 
-    private function guardLessonSchedule(?int $scheduleId, Student $student, string $date): array
+    private function guardLessonSchedule(?int $scheduleId, Student $student, string $date, bool $enforceTime = false): array
     {
         if (is_null($scheduleId)) {
             return ['schedule' => null, 'error' => 'Untuk hadir pelajaran, wajib pilih jadwal pelajaran.'];
@@ -357,6 +383,19 @@ class AttendanceController extends Controller
 
         if ((int) $schedule->day_of_week !== (int) Carbon::parse($date)->isoWeekday()) {
             return ['schedule' => null, 'error' => 'Jadwal tidak berlangsung pada tanggal '.Carbon::parse($date)->translatedFormat('D, d M Y').'.'];
+        }
+
+        if ($enforceTime) {
+            $now = now();
+            $start = Carbon::parse($schedule->start_time);
+            $end = Carbon::parse($schedule->end_time);
+
+            if ($now->lt($start->copy()->subMinutes(self::LESSON_SCAN_EARLY_MINUTES)) || $now->gt($end->copy()->addMinute())) {
+                return [
+                    'schedule' => null,
+                    'error' => 'Di luar jam pelajaran '.$start->format('H:i').'-'.$end->format('H:i').'.',
+                ];
+            }
         }
 
         return ['schedule' => $schedule, 'error' => null];
