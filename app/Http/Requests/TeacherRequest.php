@@ -15,16 +15,24 @@ class TeacherRequest extends FormRequest
     public function rules(): array
     {
         $teacherId = $this->route('teacher')?->id;
+        $tenantId = currentTenantId();
 
         return [
             'nuptk' => [
                 'nullable',
                 'digits:16',
-                Rule::unique('teachers')->where(fn ($q) => $q->where('tenant_id', currentTenantId()))->ignore($teacherId),
+                Rule::unique('teachers')->where(fn ($q) => $q->where('tenant_id', $tenantId))->ignore($teacherId),
             ],
             'nip' => ['nullable', 'max:18'],
             'name' => ['required', 'string', 'max:255'],
-            'subject' => ['nullable', 'string', 'max:100'],
+            'subject_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('subjects', 'id')->where(
+                    fn ($q) => $q->when($tenantId, fn ($scoped) => $scoped->where('tenant_id', $tenantId))
+                ),
+            ],
+            'subject_text' => ['nullable', 'string', 'max:100'],
             'employment_status' => ['required', Rule::in(['gty', 'ptt', 'asn'])],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],

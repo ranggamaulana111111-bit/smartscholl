@@ -214,7 +214,26 @@ class StudentController extends Controller
                 ];
             });
 
-        return view('students.progress', compact('student', 'bySubject', 'attendance', 'recentAttendance', 'ewsLogs', 'assignments'));
+        $scoreTrend = AssessmentGrade::query()
+            ->with('assessment.academicYear')
+            ->where('student_id', $student->id)
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy(fn ($g) => $g->assessment->academic_year_id)
+            ->map(function ($rows): array {
+                $academicYear = $rows->first()->assessment->academicYear;
+
+                return [
+                    'year' => $academicYear?->name ?? '-',
+                    'semester' => $academicYear?->semester ?? '',
+                    'avg' => round($rows->avg('score'), 2),
+                    'count' => $rows->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => $row['year'])
+            ->values();
+
+        return view('students.progress', compact('student', 'bySubject', 'attendance', 'recentAttendance', 'ewsLogs', 'assignments', 'scoreTrend'));
     }
 
     public function rapor(Student $student): View
@@ -300,11 +319,17 @@ class StudentController extends Controller
         abort(403);
     }
 
+    /**
+     * Ringkasan kehadiran hanya menghitung absensi pelajaran (type = lesson).
+     * Baris gerbang (gate_in/gate_out) adalah peristiwa masuk/pulang, bukan status
+     * kehadiran sesi, sehingga tidak boleh dicampur atau dihitung ganda.
+     */
     private function attendanceSummary(Student $student): array
     {
         $year = $student->rombel?->academicYear;
 
         $rows = Attendance::where('student_id', $student->id)
+            ->where('type', 'lesson')
             ->when($year, fn ($q) => $q->where('academic_year_id', $year->id));
 
         $counts = (clone $rows)->get()->groupBy('status')
@@ -324,7 +349,6 @@ class StudentController extends Controller
         $today = today()->toDateString();
 
         $student->rombelHistories()
-            ->where('rombel_id', $student->rombel_id)
             ->whereNull('left_at')
             ->update(['left_at' => $today]);
 

@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\Writer\SvgWriter;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -167,6 +168,40 @@ class AttendanceController extends Controller
         return view('attendance.manual', compact('students', 'schedules'));
     }
 
+    public function manualSchedule(Schedule $schedule, Request $request): View
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('guru') && (int) $schedule->user_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $date = $request->input('date') ?: now()->toDateString();
+
+        $students = Student::with('rombel')
+            ->where('rombel_id', $schedule->rombel_id)
+            ->orderBy('name')
+            ->get();
+
+        $monthStart = now()->startOfMonth()->toDateString();
+
+        $monthly = Attendance::where('schedule_id', $schedule->id)
+            ->where('type', 'lesson')
+            ->whereDate('date', '>=', $monthStart)
+            ->get()
+            ->groupBy('student_id')
+            ->map(
+                fn ($rows) => [
+                    'hadir' => $rows->where('status', 'hadir')->count(),
+                    'sakit' => $rows->where('status', 'sakit')->count(),
+                    'izin' => $rows->where('status', 'izin')->count(),
+                    'alpha' => $rows->where('status', 'alpha')->count(),
+                ]
+            );
+
+        return view('attendance.manual-schedule', compact('schedule', 'students', 'monthly', 'date'));
+    }
+
     public function storeManual(ManualAttendanceRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -219,20 +254,47 @@ class AttendanceController extends Controller
             return to_route('attendance.manual')->with('success', 'Data absensi diperbarui.');
         }
 
-        $record = Attendance::create([
-            'student_id' => $data['student_id'],
-            'academic_year_id' => $scheduleId !== null
-                ? $schedule?->academic_year_id
-                : AcademicYear::where('is_active', true)->value('id'),
-            'schedule_id' => $data['type'] === 'lesson' ? $scheduleId : null,
-            'recorded_by' => auth()->id(),
-            'type' => $data['type'],
-            'status' => $data['status'],
-            'date' => $data['date'],
-            'time' => now()->format('H:i:s'),
-            'source' => 'manual',
-            'note' => $data['note'] ?? null,
-        ]);
+        try {
+            $record = Attendance::create([
+                'student_id' => $data['student_id'],
+                'academic_year_id' => $scheduleId !== null
+                    ? $schedule?->academic_year_id
+                    : AcademicYear::where('is_active', true)->value('id'),
+                'schedule_id' => $data['type'] === 'lesson' ? $scheduleId : null,
+                'recorded_by' => auth()->id(),
+                'type' => $data['type'],
+                'status' => $data['status'],
+                'date' => $data['date'],
+                'time' => now()->format('H:i:s'),
+                'source' => 'manual',
+                'note' => $data['note'] ?? null,
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $existing = $existingQuery->first();
+
+            if (! $existing) {
+                throw $exception;
+            }
+
+            $tracked = ['status', 'time', 'source', 'note'];
+            $old = $existing->only($tracked);
+
+            $existing->update([
+                'status' => $data['status'],
+                'time' => now()->format('H:i:s'),
+                'source' => 'manual',
+                'note' => $data['note'] ?? null,
+                'schedule_id' => $data['type'] === 'lesson' ? $scheduleId : $existing->schedule_id,
+            ]);
+
+            log_audit('update', $existing, $old, $existing->only($tracked));
+
+            return to_route('attendance.manual')->with('success', 'Data absensi diperbarui.');
+        }
 
         log_audit('create', $record);
 
@@ -296,19 +358,36 @@ class AttendanceController extends Controller
             }
         }
 
-        $attendance = Attendance::create([
-            'student_id' => $student->id,
-            'academic_year_id' => $schedule?->academic_year_id
-                ?? AcademicYear::where('is_active', true)->value('id'),
-            'schedule_id' => $schedule?->id,
-            'recorded_by' => auth()->id(),
-            'type' => $mode,
-            'status' => 'hadir',
-            'date' => $date,
-            'time' => now()->format('H:i:s'),
-            'source' => 'scan',
-            'note' => $note,
-        ]);
+        try {
+            $attendance = Attendance::create([
+                'student_id' => $student->id,
+                'academic_year_id' => $schedule?->academic_year_id
+                    ?? AcademicYear::where('is_active', true)->value('id'),
+                'schedule_id' => $schedule?->id,
+                'recorded_by' => auth()->id(),
+                'type' => $mode,
+                'status' => 'hadir',
+                'date' => $date,
+                'time' => now()->format('H:i:s'),
+                'source' => 'scan',
+                'note' => $note,
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $existing = $existingQuery->first();
+
+            if (! $existing) {
+                throw $exception;
+            }
+
+            return [
+                'outcome' => 'info',
+                'message' => $student->name.' sudah tercatat '.$this->modeLabel($mode).' pukul '.$existing->time,
+            ];
+        }
 
         log_audit('create', $attendance);
 
@@ -342,6 +421,20 @@ class AttendanceController extends Controller
         }
 
         return back()->with($outcome, $message);
+    }
+
+    /**
+     * Bedakan pelanggaran unique (race duplikasi) dari error database lain
+     * agar error non-duplikat tetap terlihat, bukan ditelan diam-diam.
+     */
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        $driverCode = $exception->errorInfo[1] ?? null;
+        $message = $exception->getMessage();
+
+        return $driverCode === 1062
+            || str_contains($message, 'Duplicate entry')
+            || str_contains($message, 'UNIQUE constraint failed');
     }
 
     private function authorizeManualFor(Student $student): void

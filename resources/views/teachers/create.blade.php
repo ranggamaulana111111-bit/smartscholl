@@ -37,9 +37,19 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-            <label for="subject" class="block text-sm font-medium text-forest-800 mb-1">Mata Pelajaran</label>
-            <input type="text" id="subject" name="subject" value="{{ old('subject') }}" maxlength="100"
+            <label for="subject_id" class="block text-sm font-medium text-forest-800 mb-1">Mata Pelajaran Utama</label>
+            <select id="subject_id" name="subject_id" class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none @error('subject_id') border-red-400 @enderror">
+                <option value="">-- Pilih --</option>
+                @foreach ($subjects as $subject)
+                    <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
+                @endforeach
+            </select>
+            <label for="subject_text" class="block text-xs text-forest-600 mt-2 mb-1">Mapel lain (catatan bebas, opsional)</label>
+            <input type="text" id="subject_text" name="subject_text" value="{{ old('subject_text') }}" maxlength="100"
                 class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">
+            @error('subject_id')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
         </div>
         <div>
             <label for="employment_status" class="block text-sm font-medium text-forest-800 mb-1">Status Kepegawaian <span class="text-red-500">*</span></label>

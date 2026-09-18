@@ -542,6 +542,50 @@ class AttendanceTest extends TestCase
         $this->assertDatabaseCount('attendances', 0);
     }
 
+    public function test_guru_can_open_manual_schedule_page_for_own_rombel_only(): void
+    {
+        $guru = User::factory()->guru($this->tenantA->id)->create();
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+
+        $homeroom = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-1',
+            'homeroom_teacher_id' => $guru->id,
+        ]);
+
+        $studentA = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $homeroom->id, 'nisn' => '0039123403', 'name' => 'Siswa Binaan']);
+        $studentB = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $homeroom->id, 'nisn' => '0039123404', 'name' => 'Siswa Binaan Dua']);
+
+        $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $guru->id, $homeroom->id, now()->toDateString());
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualSchedule', $schedule->id))
+            ->assertOk()
+            ->assertSee($studentA->name)
+            ->assertSee($studentB->name);
+    }
+
+    public function test_guru_cannot_open_manual_schedule_page_for_other_teachers_schedule(): void
+    {
+        $guru = User::factory()->guru($this->tenantA->id)->create();
+        $otherGuru = User::factory()->guru($this->tenantA->id)->create();
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+
+        $rombel = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-2',
+            'homeroom_teacher_id' => $guru->id,
+        ]);
+
+        $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $otherGuru->id, $rombel->id, now()->toDateString());
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualSchedule', $schedule->id))
+            ->assertForbidden();
+    }
+
     private function makeSchedule(string $tenantId, ?int $yearId, ?int $userId, int $rombelId, string $date, ?string $start = null, ?string $end = null): Schedule
     {
         $subject = Subject::factory()->create(['tenant_id' => $tenantId, 'name' => 'Mapel '.fake()->unique()->bothify('##')]);

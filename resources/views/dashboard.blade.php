@@ -85,6 +85,25 @@
             </div>
         </div>
 
+        <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="card p-6">
+                <p class="text-xs text-text-muted">Jadwal Mengajar Hari Ini</p>
+                <p class="mt-2 text-4xl font-bold text-text">{{ $stats['today_schedules'] ?? 0 }}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs text-text-muted">Guru Mengajar Hari Ini</p>
+                <p class="mt-2 text-4xl font-bold text-text">{{ $stats['teachers_teaching_today'] ?? 0 }}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs text-text-muted">Guru Tanpa Jadwal Hari Ini</p>
+                <p class="mt-2 text-4xl font-bold text-text">{{ $stats['teachers_idle_today'] ?? 0 }}</p>
+            </div>
+            <div class="card p-6">
+                <p class="text-xs text-text-muted">Rombel</p>
+                <p class="mt-2 text-4xl font-bold text-accent">{{ $stats['total_rombels'] }}</p>
+            </div>
+        </div>
+
         @if(($stats['pending_journals'] ?? 0) > 0 || ($stats['unresolved_ews'] ?? 0) > 0)
             <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 @if(($stats['pending_journals'] ?? 0) > 0)

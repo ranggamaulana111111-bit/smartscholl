@@ -7,12 +7,20 @@
         <h1 class="font-display text-2xl font-semibold text-forest-950">Riwayat Absensi</h1>
         <p class="text-sm text-forest-700/70 mt-1">Rekap kehadiran siswa per hari.</p>
     </div>
-    <a href="{{ route('attendance.scan') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        Buka Mode Scan
-    </a>
+    <div class="flex items-center gap-3 shrink-0">
+        <a href="{{ route('attendance.scan') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Buka Mode Scan
+        </a>
+        <a href="{{ route('attendance.manual') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-paper-50 border border-forest-300 text-forest-800 text-sm font-medium rounded-md hover:bg-forest-100 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Absensi Manual
+        </a>
+    </div>
 </div>
 
 <form method="GET" action="{{ route('attendance.index') }}" class="mb-6 max-w-xs bg-paper-50 border border-forest-100 rounded-md p-4 flex items-center gap-3">

@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // MySQL memakai index unique lama sebagai penopang foreign key student_id,
+        // jadi index pengganti harus ada sebelum unique lama dihapus.
+        Schema::table('attendances', function (Blueprint $table) {
+            $table->index('student_id', 'attendances_student_id_index');
+        });
+
         Schema::table('attendances', function (Blueprint $table) {
             $table->dropUnique('attendance_student_type_date_unique');
             $table->unique(

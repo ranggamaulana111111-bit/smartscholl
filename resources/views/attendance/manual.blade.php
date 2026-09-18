@@ -89,6 +89,21 @@
             <p class="mt-1 text-xs text-forest-700/60">Wajib dipilih bila jenis = Hadir Pelajaran, dan harus sesuai tanggal.</p>
         </div>
 
+        <div class="pt-4 border-t border-forest-100">
+            <p class="text-sm font-medium text-forest-800 mb-2">Atau isi sekaligus per jadwal</p>
+            <div class="flex flex-wrap gap-2">
+                @foreach($schedules as $sched)
+                    <a href="{{ route('attendance.manualSchedule', $sched->id) }}"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-forest-300 bg-forest-50 text-xs font-medium text-forest-800 hover:bg-forest-100 transition-colors">
+                        {{ \Carbon\Carbon::day($sched->day_of_week)->translatedFormat('D') }} {{ substr($sched->start_time, 0, 5) }} &middot; {{ $sched->subject->name }} ({{ $sched->rombel->name }})
+                    </a>
+                @endforeach
+            </div>
+            @if($schedules->isEmpty())
+                <p class="text-xs text-forest-700/60">Tidak ada jadwal.</p>
+            @endif
+        </div>
+
         <div>
             <label for="note" class="block text-sm font-medium text-forest-800 mb-1">Catatan</label>
             <textarea id="note" name="note" rows="2" class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">{{ old('note') }}</textarea>

@@ -23,7 +23,7 @@
         </div>
         <div>
             <p class="text-xs text-forest-700/60 uppercase">Mata Pelajaran</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->subject ?? '-' }}</p>
+            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->subject?->name ?? ($teacher->subject_text ?? '-') }}</p>
         </div>
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-5">

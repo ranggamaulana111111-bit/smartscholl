@@ -67,7 +67,7 @@ class JournalController extends Controller
 
     public function store(JournalRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $data = $this->applyScheduleContext($request->validated());
         $data['academic_year_id'] = $data['academic_year_id'] ?? AcademicYear::where('is_active', true)->value('id');
         $data['user_id'] = auth()->id();
 
@@ -106,11 +106,34 @@ class JournalController extends Controller
 
         $old = $journal->only(['topic', 'status', 'date']);
 
-        $journal->update($request->validated());
+        $journal->update($this->applyScheduleContext($request->validated()));
 
         log_audit('update', $journal, $old, $journal->only(['topic', 'status', 'date']));
 
         return to_route('journals.show', $journal)->with('success', 'Jurnal KBM berhasil diperbarui.');
+    }
+
+    /**
+     * Selaraskan mapel, rombel, dan tahun ajaran dengan jadwal yang dipilih
+     * agar jurnal tidak pernah menyimpan kombinasi yang bertentangan.
+     */
+    private function applyScheduleContext(array $data): array
+    {
+        if (empty($data['schedule_id'])) {
+            return $data;
+        }
+
+        $schedule = Schedule::find($data['schedule_id']);
+
+        if (! $schedule) {
+            return $data;
+        }
+
+        $data['subject_id'] = $schedule->subject_id;
+        $data['rombel_id'] = $schedule->rombel_id;
+        $data['academic_year_id'] = $schedule->academic_year_id;
+
+        return $data;
     }
 
     private function authorizeJournal(Journal $journal): void

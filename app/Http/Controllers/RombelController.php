@@ -50,7 +50,9 @@ class RombelController extends Controller
 
     public function store(RombelRequest $request): RedirectResponse
     {
-        Rombel::create($request->validated());
+        $rombel = Rombel::create($request->validated());
+
+        log_audit('create', $rombel);
 
         return to_route('rombels.index')->with('success', 'Rombel berhasil ditambahkan.');
     }
@@ -65,7 +67,11 @@ class RombelController extends Controller
 
     public function update(RombelRequest $request, Rombel $rombel): RedirectResponse
     {
+        $old = $rombel->only(['academic_year_id', 'homeroom_teacher_id', 'name', 'grade_level']);
+
         $rombel->update($request->validated());
+
+        log_audit('update', $rombel, $old, $rombel->only(['academic_year_id', 'homeroom_teacher_id', 'name', 'grade_level']));
 
         return to_route('rombels.index')->with('success', 'Rombel berhasil diperbarui.');
     }
@@ -89,6 +95,8 @@ class RombelController extends Controller
         }
 
         $rombel->delete();
+
+        log_audit('delete', $rombel);
 
         return to_route('rombels.index')->with('success', 'Rombel berhasil dihapus.');
     }

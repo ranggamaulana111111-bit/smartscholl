@@ -39,7 +39,7 @@
                             <td class="px-4 py-3 text-forest-700">{{ $teachers->firstItem() + $i }}</td>
                             <td class="px-4 py-3 text-forest-700">{{ $teacher->nuptk ?? '-' }}</td>
                             <td class="px-4 py-3 font-medium">{{ $teacher->name }}</td>
-                            <td class="px-4 py-3 text-forest-700">{{ $teacher->subject ?? '-' }}</td>
+                            <td class="px-4 py-3 text-forest-700">{{ $teacher->subject?->name ?? ($teacher->subject_text ?? '-') }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2 py-1 rounded bg-forest-100 text-forest-800 text-xs font-medium">
                                     {{ match($teacher->employment_status) { 'asn' => 'ASN', 'gty' => 'GTY', 'ptt' => 'PTT' } }}

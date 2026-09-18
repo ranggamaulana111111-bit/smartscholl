@@ -60,6 +60,32 @@
     </div>
 @endif
 
+@if($scoreTrend->isNotEmpty())
+    <div class="card overflow-hidden mb-6">
+        <div class="px-4 py-3 bg-surface border-b border-border">
+            <h2 class="text-sm font-medium text-text">Tren Nilai per Tahun Ajaran</h2>
+        </div>
+        <div class="p-4 space-y-4">
+            @foreach($scoreTrend as $trend)
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-text">
+                            {{ $trend['year'] }}
+                            @if($trend['semester'])
+                                <span class="text-text-muted font-normal">({{ ucfirst($trend['semester']) }})</span>
+                            @endif
+                        </span>
+                        <span class="text-sm text-text-muted">Rata-rata: <strong class="text-text">{{ $trend['avg'] }}</strong></span>
+                    </div>
+                    <div class="h-2 rounded-full bg-surface overflow-hidden">
+                        <div class="h-full rounded-full {{ $trend['avg'] >= 75 ? 'bg-accent' : 'bg-danger' }}" style="width: {{ min(100, max(0, $trend['avg'])) }}%"></div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="card overflow-hidden">
         <div class="px-4 py-3 bg-surface border-b border-border">

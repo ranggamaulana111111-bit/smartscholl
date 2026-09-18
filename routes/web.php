@@ -62,6 +62,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             ->middleware('role:super_admin,admin_sekolah');
         Route::get('{student}/qrcode', [AttendanceController::class, 'qrCode'])->name('qrcode')
             ->middleware('role:super_admin,admin_sekolah');
+        Route::get('manual/schedule/{schedule}', [AttendanceController::class, 'manualSchedule'])->name('manualSchedule')
+            ->middleware('role:super_admin,admin_sekolah,guru');
         Route::get('manual', [AttendanceController::class, 'manual'])->name('manual')
             ->middleware('role:super_admin,admin_sekolah,guru');
         Route::post('manual', [AttendanceController::class, 'storeManual'])->name('storeManual')

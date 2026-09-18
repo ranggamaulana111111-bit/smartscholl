@@ -17,7 +17,8 @@ class Teacher extends Model
         'nuptk',
         'name',
         'nip',
-        'subject',
+        'subject_id',
+        'subject_text',
         'employment_status',
         'address',
         'phone',
@@ -26,5 +27,10 @@ class Teacher extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
     }
 }

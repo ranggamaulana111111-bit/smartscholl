@@ -31,13 +31,20 @@ class DashboardController extends Controller
             default => [[], [], []],
         };
 
-        $recentAttendances = in_array($user->role, ['admin_sekolah', 'guru'])
-            ? Attendance::with(['student'])
+        $recentAttendances = match (true) {
+            $user->isAdminSekolah() => Attendance::with(['student'])
                 ->whereDate('date', now())
                 ->latest('time')
                 ->limit(8)
-                ->get()
-            : collect();
+                ->get(),
+            $user->isGuru() => Attendance::with(['student'])
+                ->whereDate('date', now())
+                ->whereHas('student.rombel', fn ($q) => $q->where('homeroom_teacher_id', $user->id))
+                ->latest('time')
+                ->limit(8)
+                ->get(),
+            default => collect(),
+        };
 
         $pendingJournals = $user->hasAnyRole(['admin_sekolah', 'guru'])
             ? $this->pendingJournals()
@@ -74,17 +81,28 @@ class DashboardController extends Controller
     private function adminSekolahStats(): array
     {
         $today = Attendance::whereDate('date', now());
+        $todayScheduleCount = Schedule::query()
+            ->where('day_of_week', now()->dayOfWeekIso)
+            ->count();
+        $teachingToday = Schedule::query()
+            ->where('day_of_week', now()->dayOfWeekIso)
+            ->distinct('user_id')
+            ->count('user_id');
+        $teachersTotal = Teacher::count();
 
         return [
             'total_users' => User::count(),
             'total_students' => Student::count(),
-            'total_teachers' => Teacher::count(),
+            'total_teachers' => $teachersTotal,
             'total_rombels' => Rombel::count(),
             'active_academic_year' => AcademicYear::where('is_active', true)->value('name'),
             'today_present' => (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id'),
             'today_absent' => Student::count() - (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id'),
             'pending_journals' => Journal::whereDate('date', now())->where('status', 'draft')->count(),
             'unresolved_ews' => EarlyWarningLog::where('is_resolved', false)->count(),
+            'today_schedules' => $todayScheduleCount,
+            'teachers_teaching_today' => $teachingToday,
+            'teachers_idle_today' => max(0, $teachersTotal - $teachingToday),
         ];
     }
 
@@ -175,17 +193,19 @@ class DashboardController extends Controller
 
     private function pendingJournals(): Collection
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
         $today = now()->toDateString();
 
-        return Schedule::with(['subject', 'rombel'])
-            ->where('user_id', auth()->user()->isGuru() ? $userId : null)
+        return Schedule::with(['subject', 'rombel', 'teacher'])
+            ->when($activeYearId, fn ($query) => $query->where('academic_year_id', $activeYearId))
+            ->when($user->isGuru(), fn ($query) => $query->where('user_id', $user->id))
             ->where('day_of_week', now()->dayOfWeekIso)
             ->whereNotIn('id', function ($query) use ($today) {
                 $query->select('schedule_id')
                     ->from('journals')
                     ->whereDate('date', $today)
-                    ->where('user_id', auth()->id());
+                    ->whereNotNull('schedule_id');
             })
             ->orderBy('start_time')
             ->get();

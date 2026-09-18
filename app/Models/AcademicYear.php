@@ -33,4 +33,19 @@ class AcademicYear extends Model
     {
         return $this->hasMany(Rombel::class);
     }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
+    public function journals(): HasMany
+    {
+        return $this->hasMany(Journal::class);
+    }
+
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class);
+    }
 }

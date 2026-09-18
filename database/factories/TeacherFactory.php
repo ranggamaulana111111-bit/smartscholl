@@ -20,7 +20,7 @@ class TeacherFactory extends Factory
             'nuptk' => $this->faker->unique()->numerify('##############'),
             'name' => $this->faker->name,
             'nip' => $this->faker->unique()->numerify('##################'),
-            'subject' => $this->faker->randomElement(['Matematika', 'Bahasa Indonesia', 'Fisika', 'Kimia', 'Biologi', 'Bahasa Inggris']),
+            'subject_text' => $this->faker->randomElement(['Matematika', 'Bahasa Indonesia', 'Fisika', 'Kimia', 'Biologi', 'Bahasa Inggris']),
             'employment_status' => $this->faker->randomElement(['gty', 'ptt', 'asn']),
             'address' => $this->faker->address,
             'phone' => $this->faker->numerify('08##########'),

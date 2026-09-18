@@ -30,7 +30,7 @@ Arsitektur mendukung **multi-tenant** (banyak sekolah), namun saat ini dioperasi
 | Database runtime | MySQL (`smart_school`) |
 | Database tes | SQLite in-memory (`:memory:`) |
 | QR Code | `endroid/qr-code` ^6.0 |
-| Testing | PHPUnit 11 (138 tes) |
+| Testing | PHPUnit 11 (181 tes) |
 | Style PHP | Laravel Pint |
 | Lingkungan dev | Laragon (Windows), tanpa Docker/Sail |
 
@@ -57,11 +57,11 @@ app/
 bootstrap/app.php              # Konfigurasi middleware + alias
 database/
   factories/                   # 17 factory untuk tes
-  migrations/                  # 23 migrasi
+    migrations/                  # 32 migrasi
 resources/views/               # Blade (layouts, per modul)
 routes/web.php                 # Semua route web
 tests/
-  Feature/                     # 11 file tes fitur
+  Feature/                     # 14 file tes fitur
   Unit/
 ```
 
@@ -108,19 +108,19 @@ Daftar role: `super_admin`, `admin_sekolah`, `guru`, `siswa`, `orang_tua`.
 | `User` | `users` | `tenant_id`, `name`, `email` (unique), `role`, `password` |
 | `AcademicYear` | `academic_years` | `name`, `semester` (ganjil/genap), `start_date`, `end_date`, `is_active` |
 | `Rombel` | `rombels` | `academic_year_id`, `homeroom_teacher_id`, `name`, `grade_level` (unique per tenant+tahun+nama) |
-| `Student` | `students` | `nisn` (unique), `nis`, `qr_token` (unique), `rfid_uid` (unique per tenant), `name`, `gender`, `birth_date`, `user_id`, `rombel_id` |
-| `Teacher` | `teachers` | `user_id` (unique), `nuptk` (unique), `nip`, `subject`, `employment_status` (`gty/ptt/asn`) |
+| `Student` | `students` | `nisn` (unique per tenant), `nis`, `qr_token` (unique), `rfid_uid` (unique per tenant), `name`, `gender`, `birth_date`, `user_id`, `rombel_id` |
+| `Teacher` | `teachers` | `user_id` (unique), `nuptk` (unique), `nip`, `subject_id` (FK `subjects`, nullOnDelete, dipercayai), `subject_text` (teks legacy fallback), `employment_status` (`gty/ptt/asn`) |
 | `Subject` | `subjects` | `name` (unique per tenant), `code`, `is_active` |
 | `Schedule` | `schedules` | `academic_year_id`, `user_id`, `subject_id`, `rombel_id`, `day_of_week`, `start_time`, `end_time` |
-| `Journal` | `journals` | `user_id`, `subject_id`, `rombel_id`, `schedule_id`, `date`, `topic`, `notes`, `attendance_filled`, `status` (`draft/closed`); unique (`user_id`, `schedule_id`, `date`) |
+| `Journal` | `journals` | `user_id`, `subject_id`, `rombel_id`, `schedule_id`, `date`, `topic`, `notes`, `attendance_filled`, `status` (`draft/closed`); unique (`user_id`, `schedule_id`, `date`) dan unique sesi (`user_id`, `date`, `rombel_id`, `schedule_id\|0`, `subject_id\|0`) |
 | `Assessment` | `assessments` | `academic_year_id`, `subject_id`, `rombel_id`, `teacher_id`, `category` (`tugas/formatif/uts/uas`), `title`, `date`, `max_score`, `weight_percentage` |
 | `AssessmentGrade` | `assessment_grades` | `assessment_id`, `student_id`, `score`, `note`; unique (`assessment_id`, `student_id`) |
-| `Attendance` | `attendances` | `student_id`, `recorded_by`, `schedule_id` (nullable, FK untuk hadir pelajaran), `type` (`gate_in/gate_out/lesson`), `status` (`hadir/sakit/izin/alpha`), `date`, `time`, `source`, `note`; unique (`student_id`, `schedule_id`, `date`) untuk absensi pelajaran, sedangkan gate didedupe di aplikasi per (`student_id`, `type`, `date`) |
+| `Attendance` | `attendances` | `student_id`, `recorded_by`, `schedule_id` (nullable, FK untuk hadir pelajaran), `type` (`gate_in/gate_out/lesson`), `status` (`hadir/sakit/izin/alpha`), `date`, `time`, `source`, `note`; `dedupe_key` (not null, aplikasi mengisi `{student_id}:{type}:{schedule_id\|0}:{date}`); unique (`student_id`, `schedule_id`, `date`) untuk absensi pelajaran dan unique (`dedupe_key`) sebagai jaring pengaman lintas tipe termasuk gate yang `schedule_id`-nya kosong |
 | `Assignment` | `assignments` | `academic_year_id`, `teacher_id`, `rombel_id`, `subject_id`, `title`, `description`, `deadline_at`, `attachment_path` |
 | `AssignmentSubmission` | `assignment_submissions` | `assignment_id`, `student_id`, `note`, `attachment_path`, `submitted_at`; unique (`assignment_id`, `student_id`) |
 | `EarlyWarningLog` | `early_warning_logs` | `student_id`, `type` (`absence_streak/attendance_rate/low_score`), `description`, `trigger_date`, `is_resolved`, `resolved_by`, `resolved_at` |
 | `StudentParent` | `student_parents` | `user_id`, `student_id`, `relationship` (`ayah/ibu/wali`), `is_primary`; unique (`user_id`, `student_id`) |
-| `StudentRombelHistory` | `student_rombel_histories` | `student_id`, `rombel_id` (nullOnDelete), `entered_at`, `left_at`; riwayat perpindahan rombel |
+| `StudentRombelHistory` | `student_rombel_histories` | `student_id`, `rombel_id` (nullOnDelete), `entered_at`, `left_at`; riwayat perpindahan rombel; kolom generated `open_student_id` + unique menjamin satu baris open per siswa |
 | `AuditLog` | `audit_logs` | `user_id`, `action`, `entity_type`, `entity_id`, `old_values` (json), `new_values` (json), `ip_address` |
 | `AuditTrail` | (legacy) | Model lama, tidak digunakan aktif |
 
@@ -173,7 +173,7 @@ Semua route dilindungi middleware `auth`, `tenant`, dan `role`. Ringkasannya:
 
 - **Super Admin**: total tenant, pengguna, siswa, guru, ringkasan tenant.
 - **Admin Sekolah**: total user/siswa/guru/rombel, tahun aktif, kehadiran hari ini, jurnal draft, EWS belum selesai, feed presensi terbaru, pengguna terbaru.
-- **Guru**: jadwal hari ini, jumlah jurnal, jurnal draft, jumlah siswa wali kelas.
+- **Guru**: jadwal hari ini, jumlah jurnal, jurnal draft, jumlah siswa wali kelas. Feed presensi terbaru hanya menampilkan siswa rombel binaan (wali kelas).
 - **Siswa**: rata-rata nilai, status hadir hari ini, jumlah alpha 30 hari.
 - **Orang tua**: jumlah anak, jumlah peringatan EWS.
 
@@ -181,7 +181,7 @@ Semua route dilindungi middleware `auth`, `tenant`, dan `role`. Ringkasannya:
 
 - Identitas siswa: token QR unik (`qr_token`) dan UID kartu RFID (`rfid_uid`, unik per tenant). QR kartu berisi `SS:{qr_token}`.
 - Resolver scan menerima 4 format: `SS:{qr_token}` (baru), `SS:{NISN}` dan NISN polos (legacy), serta UID RFID (tidak peduli huruf besar/kecil).
-- Pencatatan `gate_in` / `gate_out` / `lesson`; duplikasi dalam satu hari per tipe dicegah.
+- Pencatatan `gate_in` / `gate_out` / `lesson`; duplikasi dalam satu hari per tipe dicegah. Selain cek aplikasi, unique `dedupe_key` di DB menjaring duplikat pada balapan (race) request; pelanggaran unique ditangani sebagai hasil `info` (idempotent) sehingga tidak pernah memunculkan HTTP 500.
 - **Hadir pelajaran terikat jadwal**: mode `lesson` diwajibkan memilih jadwal (`schedule_id`). Validasi: jadwal harus ada, bila pengisi guru maka jadwal miliknya, siswa harus satu rombel dengan jadwal, dan `day_of_week` jadwal harus sesuai tanggal. `schedule_id` tersimpan pada baris kehadiran.
 - **Scan JSON**: endpoint yang sama mengembalikan JSON bila request meminta `Accept: application/json` (`ok`, `message`, `info`); kode tak dikenal `422 {ok:false}`.
 - **Scan massal**: POST `attendance/scan/bulk` menerima banyak kode (baris baru, koma, atau array JSON), melaporkan jumlah tercatat, duplikat, dan kode gagal.
@@ -205,7 +205,7 @@ Semua route dilindungi middleware `auth`, `tenant`, dan `role`. Ringkasannya:
 
 - Jadwal per hari, jam pelajaran, guru, mata pelajaran, rombel.
 - Deteksi bentrok jadwal (guru/rombel yang sama pada hari dan rentang jam sama) ditolak.
-- Jurnal diisi guru untuk jadwal hari tersebut; cegah duplikat (unique user+schedule+date) dan jurnal untuk jadwal di masa lalu.
+- Jurnal diisi guru untuk jadwal hari tersebut; satu sesi (guru+mapel+rombel+jadwal+tanggal) hanya boleh satu jurnal, dan jurnal tanpa jadwal juga dicegah ganda di gerbang validasi. Tanggal jurnal tidak boleh melebihi hari ini (isi lampau untuk backfill diizinkan); hari jadwal tidak dipaksa sama agar sesi susulan (make-up) tetap dapat dicatat.
 - Status `draft` / `closed`.
 
 ### 7.5 Tugas & PR
@@ -235,14 +235,14 @@ Log dapat ditandai selesai (resolve) oleh admin.
 ### 7.7 Portal Orang Tua
 
 - Daftar anak (melalui `StudentParent`).
-- Rata-rata nilai per kategori + rata-rata keseluruhan per anak.
-- Presensi 7 hari terakhir.
-- Peringatan EWS yang belum selesai.
+- Rata-rata nilai per kategori + rata-rata keseluruhan per anak, di-scope ke tahun ajaran rombel anak.
+- Presensi 7 hari terakhir (termasuk hari ini).
+- Peringatan EWS yang belum selesai, di-scope ke tahun ajaran rombel anak.
 - Tautan Monitor (progress) dan Cetak Rapor per anak.
 
 ### 7.8 Audit Trail
 
-- Dicatat via `log_audit()` pada aksi: create/update/delete student, schedule, subject, journal, assignment, assessment, submission, serta export/import/update_grades nilai.
+- Dicatat via `log_audit()` pada aksi: create/update/delete student, rombel, teacher, academic-year, schedule, subject, journal, assignment, assessment, submission, serta export/import/update_grades nilai.
 - Halaman `audit-logs` untuk admin menampilkan statistik (total, ubah nilai, import/export) dan daftar log dengan detail JSON.
 
 ---
@@ -255,9 +255,11 @@ Aturan penting:
 
 - `AssignmentRequest.deadline_at` harus setelah sekarang (`after:now`); lampiran maks 5 MB, mime PDF/Office/ZIP/txt.
 - `ImportGradesRequest.file` wajib, mime `csv,txt`, maks 2 MB.
-- `JournalRequest` mencegah jurnal hari di masa lalu dan duplikat.
-- `ScheduleRequest` membawa logika cek bentrok (server-side).
-- `AssessmentRequest` memvalidasi `category` ke whitelist dan `max_score` 1-1000.
+- `JournalRequest` mencegah jurnal hari di masa lalu dan duplikat; `subject_id`/`rombel_id` di-scope tenant dan bila `schedule_id` diisi, konteks jurnal (termasuk tahun ajaran) **diturunkan dari jadwal** oleh `JournalController` sehingga tidak bisa bertentangan.
+- `ScheduleRequest` membawa logika cek bentrok (server-side). Keempat FK (`academic_year_id`, `user_id`, `subject_id`, `rombel_id`) memakai `Rule::exists` yang di-scope tenant; tahun ajaran wajib aktif, guru wajib role `guru`, mapel wajib aktif, dan rombel harus berasal dari tahun ajaran yang dipilih.
+- `AssessmentRequest` memvalidasi `category` ke whitelist dan `max_score` 1-1000; `subject_id`/`rombel_id` di-scope tenant dan rombel wajib dari tahun ajaran aktif. Guru tetap wajib punya jadwal `(rombel, mapel)` pada tahun aktif.
+- `AssignmentRequest` — `subject_id`/`rombel_id` di-scope tenant dan rombel wajib dari tahun ajaran aktif; guru wajib mengampu `(rombel, mapel)` tersebut.
+- `ManualAttendanceRequest` — `student_id`/`schedule_id` di-scope tenant (guru tetap dibatasi rombel binaan di controller).
 - `AssessmentGradeRequest` untuk input nilai massal (`scores` array per siswa).
 
 ---
@@ -288,7 +290,7 @@ Rapor dicetak via halaman standalone (`students/rapor.blade.php`) dengan CSS `@m
 
 - Runtime: MySQL `smart_school` (`.env`). Gunakan `php artisan migrate` untuk migrasi.
 - Tes: SQLite in-memory (`phpunit.xml`), dengan cache/mail/session/queue memakai `array`.
-- 23 migrasi: infrastruktur Laravel + 2 tabel core base + tabel bisnis.
+- 32 migrasi: infrastruktur Laravel + 2 tabel core base + tabel bisnis.
 
 Skema aplikasi memakai foreign key + index. Wajib perhatikan: kueri apa pun terhadap model bertrait `BelongsToTenant` otomatis terisolasi per tenant, kecuali untuk `super_admin`.
 
@@ -326,7 +328,7 @@ Prefix CLI PHP di Laragon: gunakan `& "C:\laragon\bin\php\php-8.3.31-Win32-vs16-
 
 ## 12. Testing
 
-Status saat dokumentasi ini ditulis: **138 tes, 345 assertion, semuanya PASS**; Pint lulus; Vite build bersih.
+Status saat dokumentasi ini ditulis: **181 tes, 460 assertion, semuanya PASS**; Pint lulus; Vite build bersih.
 
 File tes fitur:
 
@@ -342,6 +344,8 @@ File tes fitur:
 | `EarlyWarningServiceTest` | Trigger streak/rate/score, akses halaman EWS, anti-duplikat warning belum terselesaikan, re-trigger setelah resolve |
 | `ParentPortalTest` | Akses portal, hanya anak sendiri |
 | `NewModulesTest` | Export/import nilai, assignment (CRUD + submit + download/destroy authorized), progress/rapor, audit trail + isolasi lintas tenant |
+| `TenantContextIntegrityTest` | Validasi lintas tenant untuk jadwal/jurnal/nilai/tugas/absensi manual, rombel tahun non-aktif, turunan konteks jurnal dari jadwal, unique `dedupe_key` absensi, feed dashboard guru hanya rombel binaan |
+| `BusinessCorrectnessTest` | P1: jendela presensi 7 hari & scope tahun ajaran portal orang tua, rekap absensi hanya `lesson`, daftar jurnal tertunda di dashboard, guard hapus guru + FK `schedules.user_id` restrict, unique riwayat rombel open, unique sesi jurnal + validasi jurnal non-jadwal, NISN unik per tenant |
 
 `tests/Feature/NewModulesTest.php` menutup fitur yang baru ditambahkan (modul 1-5).
 
@@ -443,7 +447,61 @@ Fokus: rantai identitas → jadwal, validasi jam, duplikasi, koreksi, dan audit 
 | Scan absensi tidak meninggalkan jejak audit | `recordOne` (jalur scan, termasuk scan massal) kini memanggil `log_audit('create', ...)`. Koreksi manual mencatat `old_values` → `new_values` pada `log_audit('update', ...)` |
 | Dedupe koreksi manual masih per tipe/tanggal | `storeManual` mencocokkan baris berdasarkan jadwal untuk type `lesson`, dan berdasarkan tipe/tanggal untuk gate — sejalan dengan aturan scan |
 
+### Wave 5 — Hardening Konteks Tenant (P0 audit, 2026-09-18)
+
+Fokus: menutup celah referensi lintas tenant pada gerbang validasi dan menduplikasi jaring pengaman absensi di level DB.
+
+| Temuan | Perbaikan |
+| --- | --- |
+| P0-1 `ScheduleRequest` memakai `exists` global | Keempat FK di-scope tenant (`Rule::exists` + `when(tenantId)`), ditambah tahun ajaran aktif, guru role `guru`, mapel aktif, dan `withValidator` memastikan rombel berasal dari tahun ajaran yang dipilih serta seluruh entitas satu tenant |
+| P0-2 `JournalRequest` memakai `exists` global | `subject_id`/`rombel_id` di-scope tenant; `withValidator` memastikan `schedule_id` milik guru, mapel & rombel konsisten dengan jadwal, dan tidak duplikat; `JournalController` menurunkan `subject_id`/`rombel_id`/`academic_year_id` dari jadwal |
+| P0-3 `AssessmentRequest` & `AssignmentRequest` memakai `exists` global | `subject_id`/`rombel_id` di-scope tenant; rombel wajib dari tahun ajaran aktif; aturan guru hanya mengampu `(rombel, mapel)` jadwal tetap berlaku |
+| P0-4 `ManualAttendanceRequest` memakai `exists` global | `student_id`/`schedule_id` di-scope tenant (batasan guru ke rombel binaan tetap di controller agar alur pesan error tidak berubah) |
+| P0-5 Duplikat gate hanya dicek di aplikasi | Migrasi `2026_09_18_100003` menambah kolom `dedupe_key` (diisi observer `Attendance::creating`) + unique `attendance_dedupe_key_unique`; `AttendanceController` menangkap `QueryException` unique (kode 1062 / `Duplicate entry` / `UNIQUE constraint failed`) dan mengembalikan hasil `info` idempotent, bukan HTTP 500 |
+| P0-6 Guru melihat feed presensi seluruh sekolah | Feed `recentAttendances` pada dashboard guru di-scope ke siswa rombel binaan (`whereHas('student.rombel')`); admin sekolah tetap melihat seluruh tenant |
+
+Catatan migrasi: index unique lama (`student_id`, `type`, `date`) di MySQL menopang foreign key `student_id`, sehingga `2026_09_18_100002` menambahkan index `attendances_student_id_index` lebih dulu sebelum menghapus unique lama — data lama tetap aman dan tidak ada constraint lama yang dibuang demi menghindari error.
+
+### Wave 6 — Business Correctness (P1 audit lanjutan, 2026-09-18)
+
+Fokus: konteks tahun ajaran pada portal orang tua, akurasi rekap absensi, kekonsistenan dashboard jurnal, integritas relasi guru–jadwal, dan jaminan keunikan di level DB.
+
+| Temuan | Perbaikan |
+| --- | --- |
+| P1-1 Presensi portal orang tua memakai batas minggu kalender | `ParentDashboardController` menghitung `whereBetween(date, [now()->subDays(6), now()])` sehingga jendela benar-benar 7 hari terakhir termasuk hari ini |
+| P1-2 Rata-rata nilai & EWS portal orang tua seumur hidup | Nilai di-scope tahun ajaran rombel anak (`whereHas('assessment', academic_year_id)`) dan peringatan EWS difilter `trigger_date` dalam rentang tahun ajaran; anak tanpa rombel → kosong (tanpa fallback seumur hidup) |
+| P1-3 Rekap absensi siswa menghitung gate | `attendanceSummary` hanya menghitung `type='lesson'` (kunci hadir/sakit/izin/alpha/total tetap untuk kompatibilitas view) |
+| P1-3b Riwayat rombel open ganda saat pindah | `openRombelHistory` menutup SEMUA baris open siswa (bukan hanya rombel yang sama); migrasi `100004` menambah generated `open_student_id` + unique di level DB |
+| P1-4 Daftar jurnal tertunda dashboard salah/kosong | `pendingJournals()` ditulis ulang: jadwal tahun ajaran aktif, `day_of_week` hari ini, difilter ke jurnal milik guru (`isGuru`), mengecualikan jadwal yang jurnalnya sudah diisi hari ini, diurutkan jam mulai |
+| P1-5 Validasi hari jurnal | Keputusan: hari jadwal TIDAK dipaksa sama (sesi susulan/make-up valid); hanya tanggal `before_or_equal:today` yang dipertahankan |
+| P1-6 Guru pemilik jadwal bisa dihapus (jadwal yatim) | `TeacherController::destroy` menolak hapus bila masih punya jadwal; migrasi `100006` mengubah FK `schedules.user_id` menjadi `restrictOnDelete` |
+| P1-8 Jurnal duplikat sesi sama lolos | Migrasi `100005` menambah generated `schedule_key`/`subject_key` + unique `journal_session_unique`; `JournalRequest` juga menolak jurnal non-jadwal ganda pada (guru, tanggal, rombel, mapel) |
+| NISN unik global menghalangi multi-tenant | Migrasi `100007` mengganti unique `students.nisn` menjadi unique (`tenant_id`, `nisn`) |
+
+Catatan: generated column memakai VIRTUAL (bukan STORED) karena MySQL 8 menolak STORED pada tabel ber-FK (`error 1215`); VIRTUAL mendukung unique index di MySQL maupun SQLite. Seluruh perubahan diverifikasi di dev MySQL (generated column ada, unique index aktif, FK `schedules_user_id_foreign` `delete_rule=RESTRICT`).
+
+### Wave 7 — Data Integrity & Reporting (P2 audit, 2026-09-19)
+
+Fokus: melindungi data saat hapus master, melengkapi audit trail pada master data, normalisasi mapel guru, audit indeks kueri tanggal, dan pelaporan dashboard gol P2.
+
+| Temuan | Perbaikan |
+| --- | --- |
+| P2-1 Hapus tahun ajaran mengkaskade menghancurkan rombel/jadwal/jurnal/nilai | Migrasi `100008` mengubah FK `rombels/schedules/journals/assessments.academic_year_id` menjadi `restrictOnDelete`; `AcademicYearController::destroy` menolak hapus dan melaporkan jumlah data terkait per entitas |
+| P2-2 Audit trail belum mencakup rombel, guru, tahun ajaran | `log_audit()` ditambahkan ke `RombelController`, `TeacherController`, `AcademicYearController` (create/update/delete; guru mencatat `subject_id`/`subject_text`) |
+| P2-3 Mapel guru berupa teks bebas (tidak konsisten) | Migrasi `100009`: kolom `teachers.subject` di-rename menjadi `subject_text` (fallback legacy, tidak dihapus) + kolom baru `subject_id` (FK `subjects`, nullOnDelete) dengan backfill pencocokan nama; `TeacherRequest` memvalidasi `subject_id` eksis per tenant; form memakai select + input teks opsional; tampilan fallback `subject_id → subject_text → '-'` |
+| P2-4 Kinerja kueri `whereDate('date', ...)` | Audit via EXPLAIN di dev MySQL: memakai index `(tenant_id, date)` ("Using index condition"); tidak ada penulisan ulang kueri. `whereDate` dipertahankan karena SQLite menyimpan `date` sebagai datetime (`where('date','Y-m-d')` gagal lintas DB). `terlambat` TIDAK ditambahkan (PRD hanya Hadir/Sakit/Izin/Alpha). |
+| P2-5 Statistik dashboard guru + tren nilai antar semester | `DashboardController::adminSekolahStats` menambah `today_schedules`, `teachers_teaching_today` (jadwal hari ini, distinct guru), `teachers_idle_today`; halaman progres siswa menambah kartu "Tren Nilai per Tahun Ajaran" (rata-rata nilai per tahun ajaran dari seluruh riwayat, diurutkan nama tahun) |
+
+Catatan: statistik guru P2-5 dihitung dari jadwal (`schedules.day_of_week`) karena belum ada model absensi guru; label ditampilkan apa adanya ("Guru Mengajar Hari Ini" = guru berjadwal hari ini), bukan klaim absen/izin aktual. Dua migrasi P2 diterapkan ke dev MySQL dan diverifikasi (`migrate:status` Ran).
+
 ## 16. Catatan Riwayat Perbaikan Lain
 
 - `2026_09_18_100001_create_student_rombel_histories_table` menambah tabel riwayat perpindahan rombel siswa (model `StudentRombelHistory`); ditampilkan pada halaman detail siswa.
-- `2026_09_18_100002_adjust_attendances_unique_per_schedule` mengganti unique absensi menjadi per (`student_id`, `schedule_id`, `date`) agar absensi pelajaran ganda dalam sehari dapat tercatat.
+- `2026_09_18_100002_adjust_attendances_unique_per_schedule` mengganti unique absensi menjadi per (`student_id`, `schedule_id`, `date`) agar absensi pelajaran ganda dalam sehari dapat tercatat; menambah `attendances_student_id_index` sebagai penopang FK `student_id` di MySQL.
+- `2026_09_18_100003_add_dedupe_key_to_attendances_table` menambah `attendances.dedupe_key` + unique `attendance_dedupe_key_unique` sebagai jaring pengaman duplikasi lintas tipe (termasuk gate `schedule_id` kosong).
+- `2026_09_18_100004_add_unique_open_rombel_history_to_student_rombel_histories_table` menambah kolom generated VIRTUAL `open_student_id` + unique `student_rombel_histories_open_student_unique` agar satu siswa hanya punya satu baris riwayat rombel "open".
+- `2026_09_18_100005_add_journal_session_uniqueness_to_journals_table` menambah generated VIRTUAL `schedule_key`/`subject_key` + unique `journal_session_unique` (`user_id`, `date`, `rombel_id`, `schedule_id|0`, `subject_id|0`).
+- `2026_09_18_100006_restrict_schedule_teacher_deletion` mengubah FK `schedules.user_id` menjadi `restrictOnDelete` agar guru yang masih memiliki jadwal tidak dapat dihapus.
+- `2026_09_18_100007_scope_students_nisn_unique_to_tenant` mengganti unique global `students.nisn` menjadi unique (`tenant_id`, `nisn`).
+- `2026_09_18_100008_restrict_academic_year_deletion` mengubah FK `rombels/schedules/journals/assessments.academic_year_id` menjadi `restrictOnDelete` agar tahun ajaran dengan data terkait tidak dapat dihapus.
+- `2026_09_18_100009_add_subject_id_to_teachers_table` menambah `teachers.subject_id` (FK `subjects`, nullOnDelete) dan mengganti nama `teachers.subject` menjadi `subject_text` sebagai fallback legacy.
