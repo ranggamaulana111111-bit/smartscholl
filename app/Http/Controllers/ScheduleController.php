@@ -26,9 +26,11 @@ class ScheduleController extends Controller
     public function index(): View
     {
         $year = AcademicYear::where('is_active', true)->first();
+        $user = auth()->user();
 
         $schedules = Schedule::with(['subject', 'rombel', 'teacher'])
             ->when($year, fn ($q) => $q->where('academic_year_id', $year->id))
+            ->when($user->hasRole('guru'), fn ($q) => $q->where('user_id', $user->id))
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->paginate(30)
@@ -82,6 +84,10 @@ class ScheduleController extends Controller
 
     public function destroy(Schedule $schedule): RedirectResponse
     {
+        if ($schedule->journals()->exists() || $schedule->attendances()->where('type', 'lesson')->exists()) {
+            return back()->withErrors('Jadwal tidak dapat dihapus karena masih memiliki jurnal atau catatan absensi pelajaran.');
+        }
+
         $schedule->delete();
 
         log_audit('delete', $schedule);

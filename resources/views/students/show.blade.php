@@ -153,6 +153,42 @@
     </div>
 </div>
 
+@if($student->rombelHistories->isNotEmpty())
+    <div class="card overflow-hidden mt-6">
+        <div class="px-4 py-3 bg-surface border-b border-border">
+            <h2 class="text-sm font-medium text-text">Riwayat Rombel</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Rombel</th>
+                        <th>Awal Masuk</th>
+                        <th>Akhir/selesai</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($student->rombelHistories as $history)
+                        <tr>
+                            <td class="font-medium text-text">{{ $history->rombel?->name ?? '-' }}</td>
+                            <td>{{ $history->entered_at?->translatedFormat('d M Y') ?? '-' }}</td>
+                            <td>{{ $history->left_at?->translatedFormat('d M Y') ?? '-' }}</td>
+                            <td>
+                                @if($history->left_at)
+                                    <span class="badge badge-muted">Pernah</span>
+                                @else
+                                    <span class="badge badge-success">Aktif</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
+
 <div class="flex items-center gap-3">
     <a href="{{ route('students.progress', $student) }}" class="btn btn-accent">Monitor Perkembangan</a>
     <a href="{{ route('students.rapor', $student) }}" class="btn btn-primary" target="_blank">Cetak Rapor</a>

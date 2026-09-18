@@ -63,6 +63,11 @@ class Student extends Model
         return $this->belongsTo(Rombel::class);
     }
 
+    public function rombelHistories(): HasMany
+    {
+        return $this->hasMany(StudentRombelHistory::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -76,6 +81,11 @@ class Student extends Model
     public function assessmentGrades(): HasMany
     {
         return $this->hasMany(AssessmentGrade::class);
+    }
+
+    public function assignmentSubmissions(): HasMany
+    {
+        return $this->hasMany(AssignmentSubmission::class);
     }
 
     public function earlyWarningLogs(): HasMany

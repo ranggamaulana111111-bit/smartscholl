@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\AcademicYear;
 use App\Models\Assessment;
+use App\Models\AssessmentGrade;
 use App\Models\Assignment;
+use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Rombel;
 use App\Models\Schedule;
@@ -180,6 +182,22 @@ class NewModulesTest extends TestCase
         ]);
     }
 
+    public function test_guru_cannot_create_assignment_outside_schedule(): void
+    {
+        $subjectB = Subject::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Biologi']);
+
+        $this->actingAs($this->guru)
+            ->post(route('assignments.store'), [
+                'rombel_id' => $this->rombel->id,
+                'subject_id' => $subjectB->id,
+                'title' => 'Tugas Biologi',
+                'deadline_at' => now()->addDays(3),
+            ])
+            ->assertSessionHasErrors('subject_id');
+
+        $this->assertDatabaseCount('assignments', 0);
+    }
+
     public function test_siswa_can_submit_assignment(): void
     {
         Storage::fake('public');
@@ -227,6 +245,91 @@ class NewModulesTest extends TestCase
 
         $this->actingAs($this->siswa)
             ->get(route('assignments.show', $assignment))
+            ->assertForbidden();
+    }
+
+    public function test_guru_can_download_own_assignment(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('assignments/materi.txt', 'isi materi');
+
+        $assignment = Assignment::factory()->create([
+            'tenant_id' => $this->guru->tenant_id,
+            'teacher_id' => $this->guru->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'academic_year_id' => $this->year->id,
+            'attachment_path' => 'assignments/materi.txt',
+            'deadline_at' => now()->addDays(7),
+        ]);
+
+        $this->actingAs($this->guru)
+            ->get(route('assignments.download', $assignment))
+            ->assertOk();
+    }
+
+    public function test_guru_cannot_download_other_gurus_assignment(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('assignments/lain.txt', 'isi');
+
+        $guruB = User::factory()->guru($this->tenant->id)->create();
+        $assignment = Assignment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'teacher_id' => $guruB->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'academic_year_id' => $this->year->id,
+            'attachment_path' => 'assignments/lain.txt',
+            'deadline_at' => now()->addDays(7),
+        ]);
+
+        $this->actingAs($this->guru)
+            ->get(route('assignments.download', $assignment))
+            ->assertForbidden();
+    }
+
+    public function test_guru_cannot_destroy_other_gurus_assignment(): void
+    {
+        $guruB = User::factory()->guru($this->tenant->id)->create();
+        $assignment = Assignment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'teacher_id' => $guruB->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'academic_year_id' => $this->year->id,
+            'deadline_at' => now()->addDays(7),
+        ]);
+
+        $this->actingAs($this->guru)
+            ->delete(route('assignments.destroy', $assignment))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('assignments', ['id' => $assignment->id]);
+    }
+
+    public function test_siswa_cannot_download_assignment_of_other_rombel(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('assignments/kelaslain.txt', 'isi');
+
+        $otherRombel = Rombel::factory()->create([
+            'tenant_id' => $this->admin->tenant_id,
+            'academic_year_id' => $this->year->id,
+            'name' => 'XI-2',
+        ]);
+        $assignment = Assignment::factory()->create([
+            'tenant_id' => $this->guru->tenant_id,
+            'teacher_id' => $this->guru->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $otherRombel->id,
+            'academic_year_id' => $this->year->id,
+            'attachment_path' => 'assignments/kelaslain.txt',
+            'deadline_at' => now()->addDays(7),
+        ]);
+
+        $this->actingAs($this->siswa)
+            ->get(route('assignments.download', $assignment))
             ->assertForbidden();
     }
 
@@ -358,6 +461,34 @@ class NewModulesTest extends TestCase
         $response->assertOk()->assertViewIs('audit-logs.index');
     }
 
+    public function test_audit_logs_do_not_leak_across_tenants(): void
+    {
+        $tenantB = Tenant::factory()->create();
+        $adminB = User::factory()->adminSekolah($tenantB->id)->create();
+
+        AuditLog::factory()->create([
+            'tenant_id' => $tenantB->id,
+            'user_id' => $adminB->id,
+            'action' => 'create',
+            'entity_type' => 'Student',
+        ]);
+        AuditLog::factory()->create([
+            'tenant_id' => $this->admin->tenant_id,
+            'user_id' => $this->admin->id,
+            'action' => 'create',
+            'entity_type' => 'Student',
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('audit-logs.index'))
+            ->assertOk();
+
+        $logs = $response->viewData('logs')->items();
+
+        $this->assertNotEmpty($logs);
+        $this->assertTrue(collect($logs)->every(fn ($log) => $log->tenant_id === $this->admin->tenant_id));
+    }
+
     public function test_guru_cannot_view_audit_logs(): void
     {
         $this->actingAs($this->guru)
@@ -384,5 +515,124 @@ class NewModulesTest extends TestCase
             'action' => 'delete',
             'entity_type' => 'Schedule',
         ]);
+    }
+
+    public function test_rapor_only_includes_grades_of_current_academic_year(): void
+    {
+        $oldYear = AcademicYear::factory()->create(['tenant_id' => $this->tenant->id, 'is_active' => false]);
+
+        $current = Assessment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'teacher_id' => $this->guru->id,
+            'title' => 'UTS Tahun Berjalan',
+        ]);
+        AssessmentGrade::create(['tenant_id' => $this->tenant->id, 'assessment_id' => $current->id, 'student_id' => $this->student->id, 'score' => 88]);
+
+        $old = Assessment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $oldYear->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'teacher_id' => $this->guru->id,
+            'title' => 'UTS Tahun Lalu',
+        ]);
+        AssessmentGrade::create(['tenant_id' => $this->tenant->id, 'assessment_id' => $old->id, 'student_id' => $this->student->id, 'score' => 19]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('students.rapor', $this->student))
+            ->assertOk();
+
+        $content = $response->getContent();
+        $this->assertStringContainsString('88.00', $content);
+        $this->assertStringNotContainsString('19.00', $content);
+    }
+
+    public function test_rapor_renormalizes_final_score_when_categories_missing(): void
+    {
+        $assessment = Assessment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'teacher_id' => $this->guru->id,
+            'category' => 'tugas',
+            'title' => 'Tugas 1',
+        ]);
+        AssessmentGrade::create(['tenant_id' => $this->tenant->id, 'assessment_id' => $assessment->id, 'student_id' => $this->student->id, 'score' => 80]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('students.rapor', $this->student))
+            ->assertOk();
+
+        $content = $response->getContent();
+        $this->assertStringContainsString('80.00', $content);
+        $this->assertStringNotContainsString('16.00', $content);
+    }
+
+    public function test_guru_cannot_access_student_outside_homeroom(): void
+    {
+        $guruB = User::factory()->guru($this->tenant->id)->create();
+        $rombelB = Rombel::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'name' => 'X-2',
+            'homeroom_teacher_id' => $guruB->id,
+        ]);
+        $studentB = Student::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'rombel_id' => $rombelB->id,
+        ]);
+
+        $this->actingAs($this->guru)
+            ->get(route('students.progress', $studentB))
+            ->assertForbidden();
+
+        $this->actingAs($this->guru)
+            ->get(route('students.rapor', $studentB))
+            ->assertForbidden();
+
+        $this->actingAs($guruB)
+            ->get(route('students.progress', $this->student))
+            ->assertForbidden();
+    }
+
+    public function test_guru_attendance_index_only_shows_homeroom_students(): void
+    {
+        Attendance::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'student_id' => $this->student->id,
+            'academic_year_id' => $this->year->id,
+            'type' => 'gate_in',
+            'date' => today()->toDateString(),
+        ]);
+
+        $guruB = User::factory()->guru($this->tenant->id)->create();
+        $rombelB = Rombel::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'name' => 'X-3',
+            'homeroom_teacher_id' => $guruB->id,
+        ]);
+        $studentB = Student::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'rombel_id' => $rombelB->id,
+            'nisn' => '0039300011',
+        ]);
+        Attendance::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'student_id' => $studentB->id,
+            'academic_year_id' => $this->year->id,
+            'type' => 'gate_in',
+            'date' => today()->toDateString(),
+        ]);
+
+        $this->actingAs($this->guru)
+            ->get(route('attendance.index'))
+            ->assertOk()
+            ->assertSee($this->student->nisn)
+            ->assertDontSee('0039300011');
     }
 }

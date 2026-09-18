@@ -72,6 +72,22 @@ class RombelController extends Controller
 
     public function destroy(Rombel $rombel): RedirectResponse
     {
+        $dependents = [
+            'Siswa' => fn () => $rombel->students()->count(),
+            'Jadwal' => fn () => $rombel->schedules()->count(),
+            'Jurnal pembelajaran' => fn () => $rombel->journals()->count(),
+            'Penilaian' => fn () => $rombel->assessments()->count(),
+            'Tugas' => fn () => $rombel->assignments()->count(),
+        ];
+
+        $inUse = collect($dependents)->filter(fn ($count) => $count() > 0);
+
+        if ($inUse->isNotEmpty()) {
+            $labels = $inUse->map(fn ($count, $label) => "$label: {$count()}")->implode(', ');
+
+            return back()->withErrors("Rombel tidak dapat dihapus karena masih memiliki data terkait: {$labels}.");
+        }
+
         $rombel->delete();
 
         return to_route('rombels.index')->with('success', 'Rombel berhasil dihapus.');

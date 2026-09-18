@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SubjectRequest;
+use App\Models\Assignment;
 use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Http\RedirectResponse;
@@ -81,6 +82,15 @@ class SubjectController extends Controller
 
     public function destroy(Subject $subject): RedirectResponse
     {
+        $hasSchedules = $subject->schedules()->exists();
+        $hasAssessments = $subject->assessments()->exists();
+        $hasJournals = $subject->journals()->exists();
+        $hasAssignments = Assignment::where('subject_id', $subject->id)->exists();
+
+        if ($hasSchedules || $hasAssessments || $hasJournals || $hasAssignments) {
+            return back()->with('error', 'Mata pelajaran ini masih digunakan oleh jadwal, penilaian, jurnal, atau tugas. Gunakan menu Edit untuk menonaktifkannya.');
+        }
+
         $subject->delete();
 
         log_audit('delete', $subject);

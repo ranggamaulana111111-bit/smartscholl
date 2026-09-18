@@ -23,10 +23,20 @@ class AttendanceController extends Controller
     public function index(Request $request): View
     {
         $date = $request->input('date') ?: now()->toDateString();
+        $user = auth()->user();
 
-        $totalStudents = Student::count();
+        $scopeStudent = fn ($query) => $query->when(
+            $user->hasRole('guru'),
+            fn ($q) => $q->whereHas('rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+        );
+
+        $totalStudents = $scopeStudent(Student::query())->count();
 
         $byStatus = Attendance::whereDate('date', $date)
+            ->when(
+                $user->hasRole('guru'),
+                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+            )
             ->get()
             ->groupBy('type')
             ->map(
@@ -40,6 +50,10 @@ class AttendanceController extends Controller
 
         $attendances = Attendance::with(['student.rombel', 'recordedBy'])
             ->whereDate('date', $date)
+            ->when(
+                $user->hasRole('guru'),
+                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+            )
             ->latest('time')
             ->paginate(20)
             ->withQueryString();

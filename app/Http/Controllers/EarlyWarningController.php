@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AcademicYear;
 use App\Models\EarlyWarningLog;
 use App\Services\EarlyWarningService;
 use Illuminate\Http\RedirectResponse;
@@ -13,27 +12,31 @@ class EarlyWarningController extends Controller
 {
     public function index(Request $request): View
     {
-        $year = AcademicYear::where('is_active', true)->first();
+        $user = auth()->user();
 
-        $query = EarlyWarningLog::with(['student.rombel', 'resolver'])
-            ->latest('trigger_date');
+        $scope = fn ($query) => $query->when(
+            $user->hasRole('guru'),
+            fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+        );
+
+        $logs = $scope(EarlyWarningLog::with(['student.rombel', 'resolver'])->latest('trigger_date'));
 
         if ($request->has('type') && $request->input('type')) {
-            $query->where('type', $request->input('type'));
+            $logs->where('type', $request->input('type'));
         }
 
         if ($request->has('resolved') && $request->input('resolved') !== '') {
-            $query->where('is_resolved', $request->input('resolved') === '1');
+            $logs->where('is_resolved', $request->input('resolved') === '1');
         }
 
-        $logs = $query->paginate(20)->withQueryString();
+        $logs = $logs->paginate(20)->withQueryString();
 
         $stats = [
-            'total' => EarlyWarningLog::count(),
-            'unresolved' => EarlyWarningLog::where('is_resolved', false)->count(),
-            'absence' => EarlyWarningLog::where('type', 'absence_streak')->where('is_resolved', false)->count(),
-            'attendance' => EarlyWarningLog::where('type', 'attendance_rate')->where('is_resolved', false)->count(),
-            'low_score' => EarlyWarningLog::where('type', 'low_score')->where('is_resolved', false)->count(),
+            'total' => $scope(EarlyWarningLog::query())->count(),
+            'unresolved' => $scope(EarlyWarningLog::where('is_resolved', false))->count(),
+            'absence' => $scope(EarlyWarningLog::where('type', 'absence_streak')->where('is_resolved', false))->count(),
+            'attendance' => $scope(EarlyWarningLog::where('type', 'attendance_rate')->where('is_resolved', false))->count(),
+            'low_score' => $scope(EarlyWarningLog::where('type', 'low_score')->where('is_resolved', false))->count(),
         ];
 
         return view('ews.index', compact('logs', 'stats'));

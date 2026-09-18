@@ -33,15 +33,15 @@ class EarlyWarningService
         $logs = collect();
 
         foreach ($students as $student) {
-            $logs = $logs->merge($this->checkAbsenceStreak($student))
-                ->merge($this->checkAttendanceRate($student))
-                ->merge($this->checkLowScore($student));
+            $logs = $logs->merge($this->checkAbsenceStreak($student, $academicYear))
+                ->merge($this->checkAttendanceRate($student, $academicYear))
+                ->merge($this->checkLowScore($student, $academicYear));
         }
 
         return $logs;
     }
 
-    public function checkAbsenceStreak(Student $student): Collection
+    public function checkAbsenceStreak(Student $student, ?AcademicYear $academicYear): Collection
     {
         $logs = collect();
 
@@ -49,6 +49,7 @@ class EarlyWarningService
             ->where('student_id', $student->id)
             ->where('type', 'lesson')
             ->where('status', 'alpha')
+            ->when($academicYear, fn ($q) => $q->where('academic_year_id', $academicYear->id))
             ->where('date', '>=', now()->subDays(30)->toDateString())
             ->latest('date')
             ->get()
@@ -96,20 +97,23 @@ class EarlyWarningService
         return $logs;
     }
 
-    public function checkAttendanceRate(Student $student): Collection
+    public function checkAttendanceRate(Student $student, ?AcademicYear $academicYear): Collection
     {
         $logs = collect();
 
-        $total = Attendance::query()
+        $scope = fn ($q) => $q
+            ->when($academicYear, fn ($yq) => $yq->where('academic_year_id', $academicYear->id));
+
+        $total = $scope(Attendance::query()
             ->where('student_id', $student->id)
             ->where('type', 'lesson')
-            ->where('status', '!=', 'alpha')
+            ->where('status', '!=', 'alpha'))
             ->count();
 
-        $alpha = Attendance::query()
+        $alpha = $scope(Attendance::query()
             ->where('student_id', $student->id)
             ->where('type', 'lesson')
-            ->where('status', 'alpha')
+            ->where('status', 'alpha'))
             ->count();
 
         $all = $total + $alpha;
@@ -131,14 +135,19 @@ class EarlyWarningService
         return $logs;
     }
 
-    public function checkLowScore(Student $student): Collection
+    public function checkLowScore(Student $student, ?AcademicYear $academicYear): Collection
     {
         $logs = collect();
 
         $lowGrades = AssessmentGrade::query()
             ->where('student_id', $student->id)
-            ->with('assessment')
-            ->whereHas('assessment', fn ($q) => $q->where('category', 'formatif')->orWhere('category', 'uts')->orWhere('category', 'uas'))
+            ->with(['assessment.subject'])
+            ->whereHas(
+                'assessment',
+                fn ($q) => $q
+                    ->whereIn('category', ['formatif', 'uts', 'uas'])
+                    ->when($academicYear, fn ($yq) => $yq->where('academic_year_id', $academicYear->id))
+            )
             ->where('score', '<', self::BELOW_KKM_SCORE)
             ->whereBetween('created_at', [now()->subMonths(2), now()])
             ->latest()
@@ -158,11 +167,27 @@ class EarlyWarningService
 
     private function createLog(Student $student, string $type, string $description): EarlyWarningLog
     {
-        return EarlyWarningLog::create([
-            'student_id' => $student->id,
-            'type' => $type,
-            'description' => $description,
-            'trigger_date' => now()->toDateString(),
-        ]);
+        $unresolved = EarlyWarningLog::query()
+            ->where('student_id', $student->id)
+            ->where('type', $type)
+            ->where('is_resolved', false)
+            ->latest()
+            ->first();
+
+        if ($unresolved) {
+            return $unresolved;
+        }
+
+        return EarlyWarningLog::firstOrCreate(
+            [
+                'student_id' => $student->id,
+                'type' => $type,
+                'trigger_date' => now()->toDateString(),
+            ],
+            [
+                'tenant_id' => currentTenantId(),
+                'description' => $description,
+            ]
+        );
     }
 }

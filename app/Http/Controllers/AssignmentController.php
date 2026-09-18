@@ -8,14 +8,15 @@ use App\Models\AcademicYear;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Rombel;
+use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\StudentParent;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentController extends Controller
 {
@@ -56,8 +57,20 @@ class AssignmentController extends Controller
 
     public function create(): View
     {
-        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
-        $rombels = Rombel::orderBy('name')->get();
+        $user = auth()->user();
+
+        if ($user->isGuru()) {
+            $schedules = Schedule::where('user_id', $user->id)
+                ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
+                ->with(['subject', 'rombel'])
+                ->get();
+
+            $subjects = $schedules->pluck('subject')->filter()->unique('id')->sortBy('name')->values();
+            $rombels = $schedules->pluck('rombel')->filter()->unique('id')->sortBy('name')->values();
+        } else {
+            $subjects = Subject::where('is_active', true)->orderBy('name')->get();
+            $rombels = Rombel::orderBy('name')->get();
+        }
 
         return view('assignments.create', compact('subjects', 'rombels'));
     }
@@ -139,8 +152,10 @@ class AssignmentController extends Controller
         return to_route('assignments.show', $assignment)->with('success', 'Tugas berhasil dikumpulkan.');
     }
 
-    public function download(Assignment $assignment): Response
+    public function download(Assignment $assignment): StreamedResponse
     {
+        $this->authorizeAccess($assignment);
+
         abort_unless($assignment->attachment_path && Storage::disk('public')->exists($assignment->attachment_path), 404);
 
         return Storage::disk('public')->download($assignment->attachment_path);
@@ -148,6 +163,8 @@ class AssignmentController extends Controller
 
     public function destroy(Assignment $assignment): RedirectResponse
     {
+        $this->authorizeAccess($assignment);
+
         $assignment->delete();
 
         log_audit('delete', $assignment);
@@ -159,7 +176,13 @@ class AssignmentController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasAnyRole(['super_admin', 'admin_sekolah', 'guru'])) {
+        if ($user->hasRole('super_admin') || $user->hasRole('admin_sekolah')) {
+            return;
+        }
+
+        if ($user->hasRole('guru')) {
+            abort_unless($assignment->teacher_id === $user->id, 403, 'Anda hanya dapat mengelola tugas milik Anda sendiri.');
+
             return;
         }
 

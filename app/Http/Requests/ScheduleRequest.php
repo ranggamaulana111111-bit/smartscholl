@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Schedule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ScheduleRequest extends FormRequest
@@ -36,5 +37,30 @@ class ScheduleRequest extends FormRequest
             'end_time.required' => 'Jam selesai wajib diisi.',
             'end_time.after' => 'Jam selesai harus setelah jam mulai.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $academicYearId = $this->input('academic_year_id');
+            $day = $this->input('day_of_week');
+            $start = ($this->input('start_time') ?? '').':00';
+            $end = ($this->input('end_time') ?? '').':00';
+            $userId = $this->input('user_id');
+            $rombelId = $this->input('rombel_id');
+
+            $conflict = Schedule::query()
+                ->where('academic_year_id', $academicYearId)
+                ->where('day_of_week', $day)
+                ->where('start_time', '<', $end)
+                ->where('end_time', '>', $start)
+                ->where(fn ($q) => $q->where('user_id', $userId)->orWhere('rombel_id', $rombelId))
+                ->when($this->route('schedule'), fn ($q) => $q->where('id', '!=', $this->route('schedule')->id))
+                ->exists();
+
+            if ($conflict) {
+                $validator->errors()->add('start_time', 'Jadwal bentrok dengan jam mengajar guru atau kelas lain pada rentang waktu tersebut.');
+            }
+        });
     }
 }

@@ -16,7 +16,7 @@ class JournalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'schedule_id' => ['nullable', 'exists:schedules,id'],
+            'schedule_id' => ['nullable', Rule::exists('schedules', 'id')->where(fn ($q) => $q->where('user_id', auth()->id()))],
             'subject_id' => ['nullable', 'exists:subjects,id'],
             'rombel_id' => ['required', 'exists:rombels,id'],
             'date' => ['required', 'date', 'before_or_equal:today'],

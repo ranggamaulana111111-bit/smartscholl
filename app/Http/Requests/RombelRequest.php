@@ -27,7 +27,7 @@ class RombelRequest extends FormRequest
                 Rule::unique('rombels')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('academic_year_id', $this->input('academic_year_id')))->ignore($rombelId),
             ],
             'grade_level' => ['required', 'string', 'max:10'],
-            'homeroom_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
+            'homeroom_teacher_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId)))],
         ];
     }
 

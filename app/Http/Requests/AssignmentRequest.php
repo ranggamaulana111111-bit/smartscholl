@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Schedule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class AssignmentRequest extends FormRequest
 {
@@ -21,6 +23,25 @@ class AssignmentRequest extends FormRequest
             'deadline_at' => ['required', 'date', 'after:now'],
             'attachment' => ['nullable', 'file', 'max:5120', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,txt'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        if (! auth()->user()->isGuru()) {
+            return;
+        }
+
+        $validator->after(function ($validator) {
+            $taught = Schedule::where('user_id', auth()->id())
+                ->where('subject_id', $this->input('subject_id'))
+                ->where('rombel_id', $this->input('rombel_id'))
+                ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
+                ->exists();
+
+            if (! $taught) {
+                $validator->errors()->add('subject_id', 'Anda tidak dijadwalkan mengajar mata pelajaran ini di rombel tersebut.');
+            }
+        });
     }
 
     public function messages(): array

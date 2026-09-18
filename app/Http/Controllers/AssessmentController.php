@@ -9,6 +9,7 @@ use App\Models\AcademicYear;
 use App\Models\Assessment;
 use App\Models\AssessmentGrade;
 use App\Models\Rombel;
+use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
@@ -56,11 +57,23 @@ class AssessmentController extends Controller
 
     public function create(): View
     {
-        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
-        $rombels = Rombel::with('academicYear')
-            ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
-            ->orderBy('name')
-            ->get();
+        $user = auth()->user();
+
+        if ($user->isGuru()) {
+            $schedules = Schedule::where('user_id', $user->id)
+                ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
+                ->with(['subject', 'rombel'])
+                ->get();
+
+            $subjects = $schedules->pluck('subject')->filter()->unique('id')->sortBy('name')->values();
+            $rombels = $schedules->pluck('rombel')->filter()->unique('id')->sortBy('name')->values();
+        } else {
+            $subjects = Subject::where('is_active', true)->orderBy('name')->get();
+            $rombels = Rombel::with('academicYear')
+                ->whereHas('academicYear', fn ($q) => $q->where('is_active', true))
+                ->orderBy('name')
+                ->get();
+        }
 
         return view('assessments.create', compact('subjects', 'rombels'));
     }
@@ -277,6 +290,21 @@ class AssessmentController extends Controller
             ->get()
             ->keyBy('student_id');
 
+        $user = auth()->user();
+
+        if ($user->isSiswa()) {
+            $student = Student::where('user_id', $user->id)->first();
+
+            $ownsGrade = $student ? $grades->has($student->id) : false;
+
+            if (! $student || (! $ownsGrade && $assessment->rombel_id !== $student->rombel_id)) {
+                abort(403, 'Anda hanya dapat melihat penilaian pada rombel Anda sendiri.');
+            }
+
+            $grades = $grades->filter(fn (AssessmentGrade $grade) => $grade->student_id === $student->id);
+            $students = $students->filter(fn (Student $row) => $row->id === $student->id);
+        }
+
         $stats = [
             'count' => $grades->count(),
             'avg' => $grades->count() > 0 ? round($grades->avg('score'), 2) : 0,
@@ -284,7 +312,7 @@ class AssessmentController extends Controller
             'max' => $grades->max('score'),
         ];
 
-        $canGrade = auth()->user()->hasAnyRole(['super_admin', 'admin_sekolah', 'guru']);
+        $canGrade = $user->hasAnyRole(['super_admin', 'admin_sekolah', 'guru']);
 
         return view('assessments.show', compact('assessment', 'students', 'grades', 'stats', 'canGrade'));
     }

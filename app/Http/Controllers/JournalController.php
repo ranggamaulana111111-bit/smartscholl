@@ -80,6 +80,7 @@ class JournalController extends Controller
 
     public function show(Journal $journal): View
     {
+        $this->authorizeJournal($journal);
         $journal->load(['subject', 'rombel', 'teacher']);
 
         return view('journals.show', compact('journal'));
@@ -87,6 +88,7 @@ class JournalController extends Controller
 
     public function edit(Journal $journal): View
     {
+        $this->authorizeJournal($journal);
         $year = AcademicYear::where('is_active', true)->first();
         $subjects = Subject::where('is_active', true)->orderBy('name')->get();
         $rombels = Rombel::when($year, fn ($q) => $q->where('academic_year_id', $year->id))->orderBy('name')->get();
@@ -100,6 +102,8 @@ class JournalController extends Controller
 
     public function update(JournalRequest $request, Journal $journal): RedirectResponse
     {
+        $this->authorizeJournal($journal);
+
         $old = $journal->only(['topic', 'status', 'date']);
 
         $journal->update($request->validated());
@@ -107,5 +111,12 @@ class JournalController extends Controller
         log_audit('update', $journal, $old, $journal->only(['topic', 'status', 'date']));
 
         return to_route('journals.show', $journal)->with('success', 'Jurnal KBM berhasil diperbarui.');
+    }
+
+    private function authorizeJournal(Journal $journal): void
+    {
+        if (auth()->user()->isGuru() && $journal->user_id !== auth()->id()) {
+            abort(403, 'Anda hanya dapat mengelola jurnal milik Anda sendiri.');
+        }
     }
 }

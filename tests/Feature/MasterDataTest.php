@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\Assessment;
+use App\Models\AssessmentGrade;
+use App\Models\Attendance;
 use App\Models\Rombel;
 use App\Models\Schedule;
 use App\Models\Student;
@@ -97,7 +100,7 @@ class MasterDataTest extends TestCase
 
     public function test_student_can_be_created_and_scoped(): void
     {
-        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
         $rombel = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
@@ -307,7 +310,7 @@ class MasterDataTest extends TestCase
 
     public function test_rfid_uid_unique_within_tenant_only(): void
     {
-        $yearA = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $yearA = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
         $rombelA = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $yearA->id]);
         Student::factory()->create([
             'tenant_id' => $this->tenantA->id,
@@ -357,5 +360,135 @@ class MasterDataTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertNotSame($oldToken, $student->fresh()->qr_token);
+    }
+
+    public function test_student_delete_blocked_when_has_attendance(): void
+    {
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
+        $rombel = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
+        $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $rombel->id]);
+        Attendance::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'student_id' => $student->id,
+            'date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->delete(route('students.destroy', $student))
+            ->assertSessionHasErrors();
+
+        $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
+
+    public function test_student_delete_blocked_when_has_grades(): void
+    {
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
+        $rombel = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
+        $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $rombel->id]);
+        $assessment = Assessment::factory()->create(['tenant_id' => $this->tenantA->id]);
+        AssessmentGrade::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'assessment_id' => $assessment->id,
+            'student_id' => $student->id,
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->delete(route('students.destroy', $student))
+            ->assertSessionHasErrors();
+
+        $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
+
+    public function test_new_student_rejected_for_inactive_year_rombel(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id, 'is_active' => false]);
+        $rombel = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
+
+        $this->actingAs($this->adminA)
+            ->post(route('students.store'), [
+                'nisn' => '0039123460',
+                'name' => 'Siswa Baru',
+                'rombel_id' => $rombel->id,
+                'gender' => 'L',
+                'birth_date' => '2009-05-12',
+            ])
+            ->assertSessionHasErrors('rombel_id');
+
+        $this->assertDatabaseCount('students', 0);
+    }
+
+    public function test_cross_tenant_rombel_rejected_for_student(): void
+    {
+        $yearB = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantB->id]);
+        $rombelB = Rombel::factory()->create(['tenant_id' => $this->tenantB->id, 'academic_year_id' => $yearB->id]);
+
+        $this->actingAs($this->adminA)
+            ->post(route('students.store'), [
+                'nisn' => '0039123461',
+                'name' => 'Siswa Nyasar',
+                'rombel_id' => $rombelB->id,
+                'gender' => 'L',
+                'birth_date' => '2009-01-01',
+            ])
+            ->assertSessionHasErrors('rombel_id');
+
+        $this->assertDatabaseCount('students', 0);
+    }
+
+    public function test_student_keeps_current_rombel_when_year_marked_inactive(): void
+    {
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
+        $rombel = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
+        $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $rombel->id]);
+
+        $year->update(['is_active' => false]);
+
+        $this->actingAs($this->adminA)
+            ->put(route('students.update', $student), [
+                'nisn' => $student->nisn,
+                'name' => 'Andi Update',
+                'rombel_id' => $rombel->id,
+                'gender' => 'L',
+                'birth_date' => '2009-08-24',
+            ])
+            ->assertRedirect(route('students.index'));
+
+        $this->assertDatabaseHas('students', ['id' => $student->id, 'name' => 'Andi Update']);
+    }
+
+    public function test_rombel_history_reentry_keeps_single_open_row(): void
+    {
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
+        $rombelA = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id, 'name' => 'X-1']);
+        $rombelB = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id, 'name' => 'X-2']);
+        $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $rombelA->id]);
+
+        $this->actingAs($this->adminA)
+            ->put(route('students.update', $student), [
+                'nisn' => $student->nisn,
+                'name' => $student->name,
+                'rombel_id' => $rombelB->id,
+                'gender' => 'P',
+                'birth_date' => '2009-01-01',
+            ])
+            ->assertRedirect(route('students.index'));
+
+        $this->actingAs($this->adminA)
+            ->put(route('students.update', $student->fresh()), [
+                'nisn' => $student->nisn,
+                'name' => $student->name,
+                'rombel_id' => $rombelA->id,
+                'gender' => 'P',
+                'birth_date' => '2009-01-01',
+            ])
+            ->assertRedirect(route('students.index'));
+
+        $student->refresh();
+
+        $openForA = $student->rombelHistories()->where('rombel_id', $rombelA->id)->whereNull('left_at')->count();
+        $openForB = $student->rombelHistories()->where('rombel_id', $rombelB->id)->whereNull('left_at')->count();
+
+        $this->assertSame(1, $openForA);
+        $this->assertSame(0, $openForB);
     }
 }

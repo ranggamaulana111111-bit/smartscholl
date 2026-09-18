@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StudentRequest;
 use App\Models\AssessmentGrade;
 use App\Models\Assignment;
-use App\Models\AssignmentSubmission;
 use App\Models\Attendance;
 use App\Models\EarlyWarningLog;
 use App\Models\Rombel;
 use App\Models\Student;
+use App\Models\StudentRombelHistory;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class StudentController extends Controller
@@ -36,7 +37,15 @@ class StudentController extends Controller
 
     public function store(StudentRequest $request): RedirectResponse
     {
-        $student = Student::create($request->validated());
+        $student = DB::transaction(function () use ($request) {
+            $student = Student::create($request->validated());
+
+            if ($student->rombel_id) {
+                $this->openRombelHistory($student);
+            }
+
+            return $student;
+        });
 
         log_audit('create', $student);
 
@@ -47,18 +56,21 @@ class StudentController extends Controller
     {
         $this->authorizeView($student);
 
-        $student->load(['rombel', 'rombel.academicYear', 'user']);
+        $student->load(['rombel', 'rombel.academicYear', 'user', 'rombelHistories.rombel']);
 
+        $year = $student->rombel?->academicYear;
         $attendance = $this->attendanceSummary($student);
 
         $recentAttendance = Attendance::with('recordedBy')
             ->where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->where('academic_year_id', $year->id))
             ->latest('date')
             ->limit(10)
             ->get();
 
         $bySubject = AssessmentGrade::with(['assessment.subject'])
             ->where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->whereHas('assessment', fn ($aq) => $aq->where('academic_year_id', $year->id)))
             ->get()
             ->groupBy(fn ($grade) => $grade->assessment->subject_id)
             ->map(function ($subjectGrades) {
@@ -82,7 +94,21 @@ class StudentController extends Controller
     public function update(StudentRequest $request, Student $student): RedirectResponse
     {
         $old = $student->only(['nisn', 'name', 'rombel_id']);
-        $student->update($request->validated());
+
+        DB::transaction(function () use ($request, $student) {
+            $previousRombelId = $student->rombel_id;
+            $student->update($request->validated());
+
+            if ($student->rombel_id !== $previousRombelId) {
+                if ($previousRombelId) {
+                    $this->closeRombelHistory($previousRombelId, $student->id);
+                }
+
+                if ($student->rombel_id) {
+                    $this->openRombelHistory($student);
+                }
+            }
+        });
 
         log_audit('update', $student, $old, $student->only(['nisn', 'name', 'rombel_id']));
 
@@ -103,6 +129,23 @@ class StudentController extends Controller
     {
         $this->authorizeView($student);
 
+        $dependents = [
+            'Absensi' => fn () => $student->attendances()->count(),
+            'Nilai' => fn () => $student->assessmentGrades()->count(),
+            'Tugas' => fn () => $student->assignmentSubmissions()->count(),
+            'Peringatan EWS' => fn () => $student->earlyWarningLogs()->count(),
+            'Relasi orang tua' => fn () => $student->parentLinks()->count(),
+            'Riwayat rombel' => fn () => $student->rombelHistories()->count(),
+        ];
+
+        $inUse = collect($dependents)->filter(fn ($count) => $count() > 0);
+
+        if ($inUse->isNotEmpty()) {
+            $labels = $inUse->map(fn ($count, $label) => "$label: {$count()}")->implode(', ');
+
+            return back()->withErrors("Siswa tidak dapat dihapus karena masih memiliki data terkait: {$labels}.");
+        }
+
         $student->delete();
 
         log_audit('delete', $student);
@@ -114,10 +157,12 @@ class StudentController extends Controller
     {
         $this->authorizeView($student);
 
-        $student->load('rombel');
+        $student->load(['rombel', 'rombel.academicYear']);
+        $year = $student->rombel?->academicYear;
 
         $grades = AssessmentGrade::with(['assessment.subject'])
             ->where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->whereHas('assessment', fn ($aq) => $aq->where('academic_year_id', $year->id)))
             ->orderBy('created_at')
             ->get();
 
@@ -145,22 +190,22 @@ class StudentController extends Controller
 
         $recentAttendance = Attendance::with('recordedBy')
             ->where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->where('academic_year_id', $year->id))
             ->latest('date')
             ->limit(15)
             ->get();
 
         $ewsLogs = EarlyWarningLog::where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->whereBetween('trigger_date', [$year->start_date, $year->end_date]))
             ->latest()
             ->get();
 
-        $assignments = Assignment::with(['subject'])
+        $assignments = Assignment::with(['subject', 'submissions' => fn ($q) => $q->where('student_id', $student->id)])
             ->where('rombel_id', $student->rombel_id)
             ->orderByDesc('deadline_at')
             ->get()
-            ->map(function (Assignment $assignment) use ($student) {
-                $submission = AssignmentSubmission::where('assignment_id', $assignment->id)
-                    ->where('student_id', $student->id)
-                    ->first();
+            ->map(function (Assignment $assignment) {
+                $submission = $assignment->submissions->first();
 
                 return [
                     'assignment' => $assignment,
@@ -177,9 +222,11 @@ class StudentController extends Controller
         $this->authorizeView($student);
 
         $student->load(['rombel', 'rombel.academicYear']);
+        $year = $student->rombel?->academicYear;
 
         $grades = AssessmentGrade::with(['assessment.subject'])
             ->where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->whereHas('assessment', fn ($aq) => $aq->where('academic_year_id', $year->id)))
             ->get();
 
         $rows = $grades->groupBy(fn ($g) => $g->assessment->subject_id)
@@ -188,7 +235,8 @@ class StudentController extends Controller
                 $byCategory = $subjectGrades->groupBy('assessment.category');
 
                 $aver = [];
-                $final = [];
+                $weighted = [];
+                $coveredWeight = 0;
 
                 foreach (array_keys(self::CATEGORY_WEIGHTS) as $category) {
                     $categoryGrades = $byCategory->get($category);
@@ -197,16 +245,17 @@ class StudentController extends Controller
                         $score = round($categoryGrades->avg('score'), 2);
                         $weight = $categoryGrades->first()->assessment->weight_percentage ?? self::CATEGORY_WEIGHTS[$category];
                         $aver[$category] = $score;
-                        $final[$category] = $score * $weight / 100;
+                        $weighted[$category] = $score * $weight / 100;
+                        $coveredWeight += $weight;
                     }
                 }
 
-                $finalScore = array_sum($final) !== 0.0 ? array_sum($final) : null;
+                $finalScore = $coveredWeight > 0 ? round(array_sum($weighted) * 100 / $coveredWeight, 2) : null;
 
                 return [
                     'name' => $subject->name ?? '-',
                     'aver' => $aver,
-                    'final_score' => $finalScore !== null ? round($finalScore, 2) : null,
+                    'final_score' => $finalScore,
                 ];
             })
             ->values();
@@ -220,7 +269,17 @@ class StudentController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasAnyRole(['super_admin', 'admin_sekolah', 'guru'])) {
+        if ($user->hasRole('super_admin') || $user->hasRole('admin_sekolah')) {
+            return;
+        }
+
+        if ($user->hasRole('guru')) {
+            abort_unless(
+                $student->rombel?->homeroom_teacher_id === $user->id,
+                403,
+                'Anda hanya dapat mengakses data siswa di rombel binaan Anda.'
+            );
+
             return;
         }
 
@@ -243,7 +302,10 @@ class StudentController extends Controller
 
     private function attendanceSummary(Student $student): array
     {
-        $rows = Attendance::where('student_id', $student->id);
+        $year = $student->rombel?->academicYear;
+
+        $rows = Attendance::where('student_id', $student->id)
+            ->when($year, fn ($q) => $q->where('academic_year_id', $year->id));
 
         $counts = (clone $rows)->get()->groupBy('status')
             ->map(fn ($group) => $group->count());
@@ -255,5 +317,28 @@ class StudentController extends Controller
             'alpha' => $counts['alpha'] ?? 0,
             'total' => $rows->count(),
         ];
+    }
+
+    private function openRombelHistory(Student $student): void
+    {
+        $today = today()->toDateString();
+
+        $student->rombelHistories()
+            ->where('rombel_id', $student->rombel_id)
+            ->whereNull('left_at')
+            ->update(['left_at' => $today]);
+
+        $student->rombelHistories()->create([
+            'rombel_id' => $student->rombel_id,
+            'entered_at' => $today,
+        ]);
+    }
+
+    private function closeRombelHistory(int $rombelId, int $studentId): void
+    {
+        StudentRombelHistory::where('student_id', $studentId)
+            ->where('rombel_id', $rombelId)
+            ->whereNull('left_at')
+            ->update(['left_at' => today()->toDateString()]);
     }
 }

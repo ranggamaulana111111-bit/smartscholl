@@ -49,4 +49,9 @@ class Rombel extends Model
     {
         return $this->hasMany(Assessment::class);
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }
