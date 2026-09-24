@@ -7,23 +7,44 @@
             <span class="w-10 h-10 rounded-lg bg-primary-hover text-accent flex items-center justify-center font-bold text-xl">S</span>
             <span class="text-2xl font-bold">Smart School</span>
         </div>
-        <div class="max-w-sm">
-            <h2 class="text-3xl font-bold leading-snug" style="letter-spacing:-0.02em">
-                Sistem operasi sekolah dalam satu tempat.
-            </h2>
-            <div class="mt-5 w-16 h-0.5 bg-accent"></div>
-            <p class="mt-5 text-sm leading-relaxed text-white/70">
-                Presensi, nilai akademik, jurnal kelas, peringatan dini, dan portal orang tua.
-            </p>
+        <div class="flex flex-col gap-10">
+            <div class="cube-scene" aria-hidden="true">
+                <div class="cube">
+                    <div class="cube__face cube__face--front">S</div>
+                    <div class="cube__face cube__face--back">S</div>
+                    <div class="cube__face cube__face--right">S</div>
+                    <div class="cube__face cube__face--left">S</div>
+                    <div class="cube__face cube__face--top">S</div>
+                    <div class="cube__face cube__face--bottom">S</div>
+                </div>
+            </div>
+            <div class="max-w-sm">
+                <h2 class="text-3xl font-bold leading-snug" style="letter-spacing:-0.02em">
+                    Sistem operasi sekolah dalam satu tempat.
+                </h2>
+                <div class="mt-5 w-16 h-0.5 bg-accent"></div>
+                <p class="mt-5 text-sm leading-relaxed text-white/70">
+                    Presensi, nilai akademik, jurnal kelas, peringatan dini, dan portal orang tua.
+                </p>
+            </div>
         </div>
         <p class="text-xs text-white/40">&copy; {{ date('Y') }} Smart School Enterprise</p>
     </div>
 
     <div class="flex items-center justify-center p-6 lg:p-12">
         <div class="w-full max-w-md">
-            <div class="lg:hidden mb-8 text-center">
-                <span class="inline-flex w-10 h-10 rounded-lg bg-primary text-accent items-center justify-center font-bold text-xl">S</span>
-                <h1 class="mt-3 text-2xl font-bold text-text">Smart School</h1>
+            <div class="lg:hidden mb-8 flex flex-col items-center gap-4">
+                <div class="cube-scene" aria-hidden="true">
+                    <div class="cube cube--sm">
+                        <div class="cube__face cube__face--front">S</div>
+                        <div class="cube__face cube__face--back">S</div>
+                        <div class="cube__face cube__face--right">S</div>
+                        <div class="cube__face cube__face--left">S</div>
+                        <div class="cube__face cube__face--top">S</div>
+                        <div class="cube__face cube__face--bottom">S</div>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-bold text-text">Smart School</h1>
             </div>
 
             <div class="hidden lg:block mb-8">
@@ -51,7 +72,7 @@
                         required
                         autofocus
                         autocomplete="email"
-                        class="w-full px-4 py-3 bg-white border border-border rounded-lg text-sm text-text placeholder:text-forest-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-primary transition-all duration-fast"
+                        class="w-full px-4 py-3 bg-white border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-primary transition-all duration-fast"
                         placeholder="nama@sekolah.ac.id"
                         aria-describedby="{{ $errors->has('email') ? 'email-error' : '' }}"
                     >
@@ -65,7 +86,7 @@
                         name="password"
                         required
                         autocomplete="current-password"
-                        class="w-full px-4 py-3 bg-white border border-border rounded-lg text-sm text-text placeholder:text-forest-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-primary transition-all duration-fast"
+                        class="w-full px-4 py-3 bg-white border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-primary transition-all duration-fast"
                         placeholder="Masukkan kata sandi"
                     >
                 </div>

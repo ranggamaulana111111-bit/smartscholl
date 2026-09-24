@@ -12,6 +12,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ParentDashboardController;
 use App\Http\Controllers\RombelController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
@@ -62,6 +63,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             ->middleware('role:super_admin,admin_sekolah');
         Route::get('{student}/qrcode', [AttendanceController::class, 'qrCode'])->name('qrcode')
             ->middleware('role:super_admin,admin_sekolah');
+        Route::get('manual/schedule/{schedule}/pertemuan', [AttendanceController::class, 'manualMeetings'])->name('manualMeetings')
+            ->middleware('role:super_admin,admin_sekolah,guru');
         Route::get('manual/schedule/{schedule}', [AttendanceController::class, 'manualSchedule'])->name('manualSchedule')
             ->middleware('role:super_admin,admin_sekolah,guru');
         Route::get('manual', [AttendanceController::class, 'manual'])->name('manual')
@@ -163,4 +166,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Audit Trail — hanya Admin
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index')
         ->middleware('role:super_admin,admin_sekolah');
+
+    // Pengaturan — Admin & Super Admin (tab Sistem khusus Super Admin)
+    Route::prefix('settings')->name('settings.')->middleware('role:super_admin,admin_sekolah')->group(function (): void {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::post('/', [SettingsController::class, 'update'])->name('update');
+    });
 });

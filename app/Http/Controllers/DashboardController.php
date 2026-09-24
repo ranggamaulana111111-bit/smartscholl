@@ -12,7 +12,6 @@ use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\StudentParent;
 use App\Models\Teacher;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -22,17 +21,16 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        [$stats, $tenants, $recentUsers] = match ($user->role) {
-            'super_admin' => [$this->superAdminStats(), $this->tenantOverview(), []],
-            'admin_sekolah' => [$this->adminSekolahStats(), [], $this->recentTenantUsers()],
-            'guru' => [$this->guruStats(), [], []],
-            'siswa' => [$this->siswaStats(), [], []],
-            'orang_tua' => [$this->orangTuaStats(), [], []],
-            default => [[], [], []],
+        [$stats, $recentUsers] = match ($user->role) {
+            'super_admin', 'admin_sekolah' => [$this->adminSekolahStats(), $this->recentTenantUsers()],
+            'guru' => [$this->guruStats(), []],
+            'siswa' => [$this->siswaStats(), []],
+            'orang_tua' => [$this->orangTuaStats(), []],
+            default => [[], []],
         };
 
         $recentAttendances = match (true) {
-            $user->isAdminSekolah() => Attendance::with(['student'])
+            $user->isSuperAdmin(), $user->isAdminSekolah() => Attendance::with(['student'])
                 ->whereDate('date', now())
                 ->latest('time')
                 ->limit(8)
@@ -46,36 +44,11 @@ class DashboardController extends Controller
             default => collect(),
         };
 
-        $pendingJournals = $user->hasAnyRole(['admin_sekolah', 'guru'])
+        $pendingJournals = $user->hasAnyRole(['super_admin', 'admin_sekolah', 'guru'])
             ? $this->pendingJournals()
             : collect();
 
-        return view('dashboard', compact('user', 'stats', 'tenants', 'recentUsers', 'recentAttendances', 'pendingJournals'));
-    }
-
-    private function superAdminStats(): array
-    {
-        return [
-            'total_tenants' => Tenant::count(),
-            'total_users' => User::count(),
-            'total_students' => User::where('role', 'siswa')->count(),
-            'total_teachers' => User::where('role', 'guru')->count(),
-        ];
-    }
-
-    private function tenantOverview(): array
-    {
-        return Tenant::orderBy('name')
-            ->withCount('users')
-            ->get()
-            ->map(fn (Tenant $tenant) => [
-                'id' => $tenant->id,
-                'name' => $tenant->name,
-                'domain' => $tenant->domain,
-                'status' => $tenant->status,
-                'user_count' => $tenant->users_count,
-            ])
-            ->all();
+        return view('dashboard', compact('user', 'stats', 'recentUsers', 'recentAttendances', 'pendingJournals'));
     }
 
     private function adminSekolahStats(): array
@@ -89,21 +62,46 @@ class DashboardController extends Controller
             ->distinct('user_id')
             ->count('user_id');
         $teachersTotal = Teacher::count();
+        $studentsTotal = Student::count();
+        $presentToday = (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id');
+        $attendanceRate = $studentsTotal > 0 ? (int) round(($presentToday / $studentsTotal) * 100) : 0;
 
         return [
             'total_users' => User::count(),
-            'total_students' => Student::count(),
+            'total_students' => $studentsTotal,
             'total_teachers' => $teachersTotal,
             'total_rombels' => Rombel::count(),
             'active_academic_year' => AcademicYear::where('is_active', true)->value('name'),
-            'today_present' => (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id'),
-            'today_absent' => Student::count() - (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id'),
+            'today_present' => $presentToday,
+            'today_absent' => $studentsTotal - $presentToday,
+            'attendance_rate' => $attendanceRate,
+            'attendance_trend' => $this->attendanceTrend(),
             'pending_journals' => Journal::whereDate('date', now())->where('status', 'draft')->count(),
             'unresolved_ews' => EarlyWarningLog::where('is_resolved', false)->count(),
             'today_schedules' => $todayScheduleCount,
             'teachers_teaching_today' => $teachingToday,
             'teachers_idle_today' => max(0, $teachersTotal - $teachingToday),
         ];
+    }
+
+    private function attendanceTrend(int $days = 7): array
+    {
+        $trend = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+
+            $trend[] = [
+                'date' => $date->toDateString(),
+                'label' => $date->translatedFormat('D'),
+                'present' => Attendance::whereDate('date', $date->toDateString())
+                    ->where('status', 'hadir')
+                    ->distinct('student_id')
+                    ->count('student_id'),
+            ];
+        }
+
+        return $trend;
     }
 
     private function recentTenantUsers(): array

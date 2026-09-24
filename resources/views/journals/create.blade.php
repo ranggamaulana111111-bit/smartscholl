@@ -20,7 +20,7 @@
             <select name="schedule_id" class="input">
                 <option value="">-- Tanpa jadwal --</option>
                 @foreach($schedules as $s)
-                    <option value="{{ $s->id }}" @selected(old('schedule_id') == $s->id)>
+                    <option value="{{ $s->id }}" @selected(old('schedule_id') ?? ($preselectScheduleId ?? '') == $s->id)>
                         {{ \Carbon\Carbon::day($s->day_of_week)->translatedFormat('l') }} {{ substr($s->start_time,0,5) }} - {{ $s->subject->name }} ({{ $s->rombel->name }})
                     </option>
                 @endforeach

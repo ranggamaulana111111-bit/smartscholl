@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Smart School')</title>
+    <title>@yield('title', setting('sistem.app_name', 'Smart School'))</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|fira-code:400" rel="stylesheet" />
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
@@ -18,9 +18,9 @@
             <aside id="sidebar" class="hidden lg:flex w-[280px] shrink-0 bg-surface border-r border-border flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto" role="navigation" aria-label="Navigasi Utama">
                 <div class="p-5 border-b border-border">
                     <div class="flex items-center gap-3">
-                        <span class="w-9 h-9 rounded-lg bg-primary text-accent flex items-center justify-center font-bold text-lg">S</span>
+                        <span class="w-9 h-9 rounded-lg bg-primary text-accent flex items-center justify-center font-bold text-lg">{{ setting('sistem.brand_glyph', 'S') }}</span>
                         <div class="min-w-0">
-                            <p class="font-bold text-sm tracking-tight text-text">Smart School</p>
+                            <p class="font-bold text-sm tracking-tight text-text">{{ setting('sistem.app_name', 'Smart School') }}</p>
                             <p class="text-xs text-text-muted truncate">{{ auth()->user()->tenant->name ?? 'Super Admin' }}</p>
                         </div>
                     </div>
@@ -65,7 +65,7 @@
                         @foreach([
                             ['route' => 'attendance.index', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4"/>', 'label' => 'Absensi (Riwayat)'],
                             ['route' => 'attendance.scan', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-9 6l2 2 4-4"/>', 'label' => 'Mode Scan'],
-                            ['route' => 'attendance.manual', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 5l2.636-4H9.364L12 5zm0 0v6m0 0l5.024  --<path stroke-linecap="round" stroke-linejoin="round" d="M12 5l2.636-4H9.364L12 5zm0 0v6m0-6l5.024 3.5L12 20 6.976 8.5z"/>', 'label' => 'Absensi Manual'],
+                            ['route' => 'attendance.manual', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 5l2.636-4H9.364L12 5zm0 0v6m0-6l5.024 3.5L12 20 6.976 8.5z"/>', 'label' => 'Absensi Manual'],
                             ['route' => 'schedules.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 10h18M4 4h16v14H4V4z"/>', 'label' => 'Jadwal'],
                             ['route' => 'journals.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>', 'label' => 'Jurnal KBM'],
                             ['route' => 'assessments.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>', 'label' => 'Nilai'],
@@ -89,6 +89,13 @@
                            @if(request()->routeIs('audit-logs.*')) aria-current="page" @endif>
                             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Audit Trail
+                        </a>
+
+                        <a href="{{ route('settings.index') }}"
+                           class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('settings.*') ? $activeClass : $inactiveClass }}"
+                           @if(request()->routeIs('settings.*')) aria-current="page" @endif>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.807-.108 1.205.164.396.506.71.93.78l.893.149c.543.09.94.56.94 1.11v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.424.07-.766.384-.93.78-.165.398-.143.854.107 1.205l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.108-.397.165-.71.506-.78.93l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.737.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.272-.807.108-1.205-.164-.396-.506-.71-.93-.78l-.893-.149a1.125 1.125 0 01-.94-1.11v-1.094c0-.55.397-1.02.94-1.11l.893-.149c.424-.07.766-.384.93-.78.165-.398.143-.854-.107-1.205l-.527-.738a1.125 1.125 0 01.12-1.45l.774-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.108.397-.165.71-.506.78-.93l.149-.894zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Pengaturan
                         </a>
                     @endif
 
@@ -133,22 +140,10 @@
                 </header>
 
                 <main id="main-content" class="p-4 lg:p-8 max-w-[1280px] mx-auto">
-                    @if(session('success'))
-                        <div class="mb-6 p-4 rounded-lg border border-success bg-green-50 text-sm text-green-800 flex items-center gap-2" role="alert" aria-live="polite">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ session('success') }}
-                        </div>
-                    @endif
-                    @if(session('info'))
-                        <div class="mb-6 p-4 rounded-lg border border-accent bg-yellow-50 text-sm text-yellow-800 flex items-center gap-2" role="status" aria-live="polite">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ session('info') }}
-                        </div>
-                    @endif
-                    @if(session('error'))
-                        <div class="mb-6 p-4 rounded-lg border border-danger bg-red-50 text-sm text-red-800 flex items-center gap-2" role="alert" aria-live="polite">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ session('error') }}
+                    @if(session('success') || session('info') || session('error'))
+                        <div class="toast {{ session('error') ? 'toast-error' : (session('info') ? 'toast-warning' : 'toast-success') }}" id="app-toast" role="status" aria-live="polite">
+                            <div class="flex-1">{{ session('success') ?? session('info') ?? session('error') }}</div>
+                            <button type="button" class="toast-close" aria-label="Tutup notifikasi">&times;</button>
                         </div>
                     @endif
                     @yield('content')
@@ -197,6 +192,20 @@
                     toggle.focus();
                 }
             });
+
+            const toast = document.getElementById('app-toast');
+            if (toast) {
+                const closeButton = toast.querySelector('.toast-close');
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const dismiss = function (instant) {
+                    if (instant) { toast.remove(); return; }
+                    toast.style.transition = 'opacity var(--duration-base) ease';
+                    toast.style.opacity = '0';
+                    setTimeout(function () { toast.remove(); }, 250);
+                };
+                if (closeButton) closeButton.addEventListener('click', function () { dismiss(reduceMotion); });
+                setTimeout(function () { dismiss(reduceMotion); }, 4000);
+            }
         });
     </script>
     @endauth

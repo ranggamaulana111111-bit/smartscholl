@@ -2,88 +2,94 @@
 
 @section('title', 'Detail '.$rombel->name)
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('rombels.index') }}" class="text-sm text-forest-700 hover:text-gold-600 transition-colors">&larr; Kembali</a>
-    <h1 class="font-display text-2xl font-semibold text-forest-950 mt-2">Detail Rombel</h1>
-</div>
+<x-page-head
+    eyebrow="Data Rombel"
+    :title="$rombel->name"
+    :description="$rombel->grade_level . ' · ' . ($rombel->academicYear?->name ?? '-')"
+>
+    <x-slot:actions>
+        <a href="{{ route('rombels.edit', $rombel) }}" class="btn btn-primary btn-sm">Edit</a>
+        <a href="{{ route('rombels.index') }}" class="btn btn-ghost btn-sm">Kembali</a>
+    </x-slot:actions>
+</x-page-head>
 
-<div class="bg-paper-50 border border-forest-100 rounded-md p-6 mb-6">
+<x-panel class="p-6 sm:p-8 mb-6">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Nama</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $rombel->name }}</p>
+            <p class="text-xs text-text-muted uppercase">Nama</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $rombel->name }}</p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Tingkat</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $rombel->grade_level }}</p>
+            <p class="text-xs text-text-muted uppercase">Tingkat</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $rombel->grade_level }}</p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Tahun Ajaran</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $rombel->academicYear?->name ?? '-' }}</p>
+            <p class="text-xs text-text-muted uppercase">Tahun Ajaran</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $rombel->academicYear?->name ?? '-' }}</p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Wali Kelas</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $rombel->homeroomTeacher?->name ?? '-' }}</p>
+            <p class="text-xs text-text-muted uppercase">Wali Kelas</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $rombel->homeroomTeacher?->name ?? '-' }}</p>
         </div>
     </div>
-</div>
+</x-panel>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-paper-50 border border-forest-100 rounded-md overflow-hidden">
-        <div class="px-4 py-3 bg-forest-50 border-b border-forest-100 flex items-center justify-between">
-            <h2 class="text-sm font-medium text-forest-800">Daftar Siswa ({{ $rombel->students->count() }})</h2>
-            <span class="text-xs text-forest-700/70">NISN &middot; Nama</span>
+    <x-panel class="overflow-hidden">
+        <div class="px-4 py-3 bg-surface border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-medium text-text">Daftar Siswa ({{ $rombel->students->count() }})</h2>
+            <span class="text-xs text-text-muted">NISN &middot; Nama</span>
         </div>
         @if($rombel->students->isEmpty())
-            <div class="px-4 py-8 text-center text-sm text-forest-700/70">Belum ada siswa dalam rombel ini.</div>
+            <div class="px-4 py-8 text-center text-sm text-text-muted">Belum ada siswa dalam rombel ini.</div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="table">
                     <thead>
-                        <tr class="bg-forest-50 text-left text-forest-800 border-b border-forest-100">
-                            <th class="px-4 py-3 font-medium w-12">No</th>
-                            <th class="px-4 py-3 font-medium">NISN</th>
-                            <th class="px-4 py-3 font-medium">Nama</th>
+                        <tr>
+                            <th class="w-12">No</th>
+                            <th>NISN</th>
+                            <th>Nama</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-forest-50">
+                    <tbody>
                         @foreach($rombel->students as $i => $student)
-                            <tr class="hover:bg-forest-50/50 transition-colors">
-                                <td class="px-4 py-3 text-forest-700">{{ $i + 1 }}</td>
-                                <td class="px-4 py-3 text-forest-700">{{ $student->nisn }}</td>
-                                <td class="px-4 py-3 font-medium text-forest-950">{{ $student->name }}</td>
+                            <tr>
+                                <td class="text-text-muted">{{ $i + 1 }}</td>
+                                <td class="text-text-muted">{{ $student->nisn }}</td>
+                                <td class="font-medium text-text">{{ $student->name }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
         @endif
-    </div>
+    </x-panel>
 
-    <div class="bg-paper-50 border border-forest-100 rounded-md overflow-hidden">
-        <div class="px-4 py-3 bg-forest-50 border-b border-forest-100">
-            <h2 class="text-sm font-medium text-forest-800">Jadwal Pelajaran</h2>
+    <x-panel class="overflow-hidden">
+        <div class="px-4 py-3 bg-surface border-b border-border">
+            <h2 class="text-sm font-medium text-text">Jadwal Pelajaran</h2>
         </div>
         @if($schedules->isEmpty())
-            <div class="px-4 py-8 text-center text-sm text-forest-700/70">Belum ada jadwal untuk rombel ini.</div>
+            <div class="px-4 py-8 text-center text-sm text-text-muted">Belum ada jadwal untuk rombel ini.</div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="table">
                     <thead>
-                        <tr class="bg-forest-50 text-left text-forest-800 border-b border-forest-100">
-                            <th class="px-4 py-3 font-medium w-12">No</th>
-                            <th class="px-4 py-3 font-medium">Mapel</th>
-                            <th class="px-4 py-3 font-medium">Guru</th>
-                            <th class="px-4 py-3 font-medium">Hari &amp; Jam</th>
+                        <tr>
+                            <th class="w-12">No</th>
+                            <th>Mapel</th>
+                            <th>Guru</th>
+                            <th>Hari &amp; Jam</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-forest-50">
+                    <tbody>
                         @foreach($schedules as $i => $schedule)
-                            <tr class="hover:bg-forest-50/50 transition-colors">
-                                <td class="px-4 py-3 text-forest-700">{{ $i + 1 }}</td>
-                                <td class="px-4 py-3 font-medium text-forest-950">{{ $schedule->subject->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-forest-700">{{ $schedule->teacher->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-forest-700 whitespace-nowrap">
+                            <tr>
+                                <td class="text-text-muted">{{ $i + 1 }}</td>
+                                <td class="font-medium text-text">{{ $schedule->subject->name ?? '-' }}</td>
+                                <td class="text-text-muted">{{ $schedule->teacher->name ?? '-' }}</td>
+                                <td class="text-text-muted whitespace-nowrap">
                                     {{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}
                                     {{ $schedule->start_time?->format('H:i') }} - {{ $schedule->end_time?->format('H:i') }}
                                 </td>
@@ -93,11 +99,6 @@
                 </table>
             </div>
         @endif
-    </div>
-</div>
-
-<div class="flex items-center gap-3">
-    <a href="{{ route('rombels.edit', $rombel) }}" class="inline-flex items-center px-4 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">Edit</a>
-    <a href="{{ route('rombels.index') }}" class="text-sm text-forest-700 hover:text-forest-900 transition-colors">Kembali</a>
+    </x-panel>
 </div>
 @endsection

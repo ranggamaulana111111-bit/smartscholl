@@ -21,8 +21,6 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
-    private const LESSON_SCAN_EARLY_MINUTES = 15;
-
     public function index(Request $request): View
     {
         $date = $request->input('date') ?: now()->toDateString();
@@ -152,20 +150,26 @@ class AttendanceController extends Controller
     {
         $user = auth()->user();
 
-        $students = Student::with('rombel')
-            ->when($user->hasRole('guru'), function ($query) use ($user): void {
-                $query->whereHas('rombel', fn ($q) => $q->where('homeroom_teacher_id', $user->id));
-            })
-            ->orderBy('name')
-            ->get();
-
         $schedules = Schedule::with(['subject', 'rombel', 'teacher'])
             ->when($user->hasRole('guru'), fn ($q) => $q->where('user_id', $user->id))
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get();
 
-        return view('attendance.manual', compact('students', 'schedules'));
+        return view('attendance.manual', compact('schedules'));
+    }
+
+    public function manualMeetings(Schedule $schedule): View
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('guru') && (int) $schedule->user_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $meetings = $this->buildMeetings($schedule);
+
+        return view('attendance.manual-meetings', compact('schedule', 'meetings'));
     }
 
     public function manualSchedule(Schedule $schedule, Request $request): View
@@ -177,6 +181,8 @@ class AttendanceController extends Controller
         }
 
         $date = $request->input('date') ?: now()->toDateString();
+
+        $pertemuan = $this->meetingNumberFor($schedule, $date);
 
         $students = Student::with('rombel')
             ->where('rombel_id', $schedule->rombel_id)
@@ -199,7 +205,31 @@ class AttendanceController extends Controller
                 ]
             );
 
-        return view('attendance.manual-schedule', compact('schedule', 'students', 'monthly', 'date'));
+        $semesterStart = $schedule->academicYear?->start_date
+            ? Carbon::parse($schedule->academicYear->start_date)->toDateString()
+            : now()->startOfYear()->toDateString();
+
+        $semester = Attendance::where('schedule_id', $schedule->id)
+            ->where('type', 'lesson')
+            ->whereDate('date', '>=', $semesterStart)
+            ->get()
+            ->groupBy('student_id')
+            ->map(
+                fn ($rows) => [
+                    'hadir' => $rows->where('status', 'hadir')->count(),
+                    'sakit' => $rows->where('status', 'sakit')->count(),
+                    'izin' => $rows->where('status', 'izin')->count(),
+                    'alpha' => $rows->where('status', 'alpha')->count(),
+                ]
+            );
+
+        $monthly = $students
+            ->mapWithKeys(fn ($student) => [$student->id => $monthly[$student->id] ?? ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alpha' => 0]]);
+
+        $semester = $students
+            ->mapWithKeys(fn ($student) => [$student->id => $semester[$student->id] ?? ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alpha' => 0]]);
+
+        return view('attendance.manual-schedule', compact('schedule', 'students', 'monthly', 'semester', 'date', 'pertemuan'));
     }
 
     public function storeManual(ManualAttendanceRequest $request): RedirectResponse
@@ -354,7 +384,7 @@ class AttendanceController extends Controller
                 ->exists();
 
             if (! $hasGateIn) {
-                $note = 'Pulang tanpa catatan masuk hari ini';
+                $note = setting('kehadiran.gate_out_without_gate_in_note', 'Pulang tanpa catatan masuk hari ini');
             }
         }
 
@@ -366,7 +396,7 @@ class AttendanceController extends Controller
                 'schedule_id' => $schedule?->id,
                 'recorded_by' => auth()->id(),
                 'type' => $mode,
-                'status' => 'hadir',
+                'status' => setting('kehadiran.scan_default_status', 'hadir'),
                 'date' => $date,
                 'time' => now()->format('H:i:s'),
                 'source' => 'scan',
@@ -482,8 +512,9 @@ class AttendanceController extends Controller
             $now = now();
             $start = Carbon::parse($schedule->start_time);
             $end = Carbon::parse($schedule->end_time);
+            $earlyMinutes = (int) setting('kehadiran.lesson_scan_early_minutes', 15);
 
-            if ($now->lt($start->copy()->subMinutes(self::LESSON_SCAN_EARLY_MINUTES)) || $now->gt($end->copy()->addMinute())) {
+            if ($now->lt($start->copy()->subMinutes($earlyMinutes)) || $now->gt($end->copy()->addMinute())) {
                 return [
                     'schedule' => null,
                     'error' => 'Di luar jam pelajaran '.$start->format('H:i').'-'.$end->format('H:i').'.',
@@ -492,6 +523,82 @@ class AttendanceController extends Controller
         }
 
         return ['schedule' => $schedule, 'error' => null];
+    }
+
+    /**
+     * Deret pertemuan sebuah jadwal dari kalender semester tahun ajaran.
+     * Setiap tanggal dalam rentang start_date-end_date yang jatuh pada
+     * day_of_week jadwal dihitung sebagai satu pertemuan bernomor.
+     *
+     * @return array<int, array{number:int, date:Carbon, is_today:bool, filled:bool, total:int}>
+     */
+    private function buildMeetings(Schedule $schedule): array
+    {
+        $year = $schedule->academicYear;
+        $start = $year?->start_date ? Carbon::parse($year->start_date) : now()->copy()->startOfYear();
+        $end = $year?->end_date ? Carbon::parse($year->end_date) : now()->copy()->endOfYear();
+
+        $target = (int) $schedule->day_of_week;
+        $cursor = $start->copy()->addDays((($target - (int) $start->isoWeekday() + 7) % 7));
+
+        $filledCounts = Attendance::where('schedule_id', $schedule->id)
+            ->where('type', 'lesson')
+            ->get()
+            ->reduce(function (array $carry, Attendance $attendance): array {
+                $date = $attendance->date->toDateString();
+                $carry[$date] = ($carry[$date] ?? 0) + 1;
+
+                return $carry;
+            }, []);
+
+        $meetings = [];
+        $number = 1;
+        $today = now()->toDateString();
+
+        while ($cursor->lte($end)) {
+            $date = $cursor->toDateString();
+            $total = $filledCounts[$date] ?? 0;
+
+            $meetings[] = [
+                'number' => $number,
+                'date' => $cursor->copy(),
+                'is_today' => $date === $today,
+                'filled' => $total > 0,
+                'total' => $total,
+            ];
+
+            $number++;
+            $cursor->addDays(7);
+        }
+
+        return $meetings;
+    }
+
+    private function meetingNumberFor(Schedule $schedule, string $date): ?int
+    {
+        $year = $schedule->academicYear;
+        $start = $year?->start_date ? Carbon::parse($year->start_date) : now()->copy()->startOfYear();
+        $target = (int) $schedule->day_of_week;
+
+        if ((int) Carbon::parse($date)->isoWeekday() !== $target) {
+            return null;
+        }
+
+        $end = Carbon::parse($date);
+        $cursor = $start->copy()->addDays((($target - (int) $start->isoWeekday() + 7) % 7));
+
+        $number = 1;
+
+        while ($cursor->lte($end)) {
+            if ($cursor->toDateString() === $date) {
+                return $number;
+            }
+
+            $number++;
+            $cursor->addDays(7);
+        }
+
+        return null;
     }
 
     private function schedulesForDay(string $date): Collection

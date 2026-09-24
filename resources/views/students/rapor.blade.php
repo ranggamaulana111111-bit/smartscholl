@@ -46,9 +46,36 @@
     </div>
 
     <div class="header">
+        @php
+            $kkm = (int) setting('penilaian.kkm', 75);
+            $schoolNpsn = setting('sekolah.npsn');
+            $schoolNss = setting('sekolah.nss');
+            $schoolAddress = trim(collect([
+                setting('sekolah.alamat'),
+                setting('sekolah.kelurahan'),
+                setting('sekolah.kecamatan'),
+                setting('sekolah.kota'),
+                setting('sekolah.provinsi'),
+                setting('sekolah.kode_pos'),
+            ])->filter()->implode(', '));
+            $schoolContact = trim(collect([
+                setting('sekolah.telepon') ? 'Telp '.setting('sekolah.telepon') : null,
+                setting('sekolah.email'),
+                setting('sekolah.website'),
+            ])->filter()->implode(' • '));
+        @endphp
         <div class="brand">
             <h1>{{ auth()->user()->tenant->name ?? '' }}</h1>
             <p>Laporan Hasil Belajar Siswa</p>
+            @if($schoolNpsn || $schoolNss)
+                <p>NPSN: {{ $schoolNpsn ?: '-' }}{{ $schoolNss ? ' • NSS: '.$schoolNss : '' }}</p>
+            @endif
+            @if($schoolAddress)
+                <p>{{ $schoolAddress }}</p>
+            @endif
+            @if($schoolContact)
+                <p>{{ $schoolContact }}</p>
+            @endif
         </div>
         <div class="title">
             <h2>Rapor Semester</h2>
@@ -86,7 +113,7 @@
                             @php $score = $row['aver'][$c] ?? null; @endphp
                             <td class="num">
                                 @if($score !== null)
-                                    <span class="{{ $score >= 75 ? 'score-b' : 'score-d' }}">{{ number_format($score, 2) }}</span>
+                                    <span class="{{ $score >= $kkm ? 'score-b' : 'score-d' }}">{{ number_format($score, 2) }}</span>
                                 @else
                                     <span style="color:#999;">-</span>
                                 @endif
@@ -111,7 +138,10 @@
     <div class="footer">
         <div class="sign">
             <p style="font-size:11px;color:#666;">Mengetahui,<br>Kepala Sekolah</p>
-            <div class="line">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
+            <div class="line">{{ setting('sekolah.kepala_sekolah') ?: '( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )' }}</div>
+            @if(setting('sekolah.nip_kepala_sekolah'))
+                <p style="text-align:center;font-size:11px;color:#666;margin-top:2px;">NIP. {{ setting('sekolah.nip_kepala_sekolah') }}</p>
+            @endif
         </div>
         <div class="sign">
             <p style="font-size:11px;color:#666;text-align:right;">Wali Kelas</p>

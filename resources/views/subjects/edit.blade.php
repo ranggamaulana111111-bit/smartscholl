@@ -2,31 +2,36 @@
 
 @section('title', 'Edit Mata Pelajaran')
 @section('content')
-<div class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-text">Edit Mata Pelajaran</h1>
-    <p class="text-sm text-text-muted mt-1">Perbarui data mata pelajaran.</p>
-</div>
-<form method="POST" action="{{ route('subjects.update', $subject) }}" class="card max-w-lg p-6 space-y-5">
+<x-page-head
+    eyebrow="Data Mata Pelajaran"
+    :title="'Edit: ' . $subject->name"
+    description="Perbarui data mata pelajaran."
+>
+    <x-slot:actions>
+        <a href="{{ route('subjects.index') }}" class="btn btn-ghost btn-sm">Kembali ke daftar</a>
+    </x-slot:actions>
+</x-page-head>
+
+<form method="POST" action="{{ route('subjects.update', $subject) }}" class="panel max-w-lg p-6 sm:p-8 space-y-6">
     @csrf
     @method('PUT')
     <div>
         <label for="name" class="label">Nama <span class="text-danger">*</span></label>
         <input type="text" id="name" name="name" value="{{ old('name', $subject->name) }}" maxlength="100"
-            class="input @error('name') border-danger @enderror">
+            class="input @error('name') border-danger @enderror" @error('name') aria-invalid="true" @enderror>
         @error('name')<p class="error-text">{{ $message }}</p>@enderror
     </div>
     <div>
         <label for="code" class="label">Kode</label>
-        <input type="text" id="code" name="code" value="{{ old('code', $subject->code) }}" maxlength="20"
-            class="input">
+        <input type="text" id="code" name="code" value="{{ old('code', $subject->code) }}" maxlength="20" class="input">
     </div>
     <div>
         <label for="is_active" class="flex items-center gap-2 text-sm font-medium text-text">
-            <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $subject->is_active) ? 'checked' : '' }}>
+            <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $subject->is_active) ? 'checked' : '' }} class="w-4 h-4 rounded border-border text-text focus:ring-accent">
             Aktif
         </label>
     </div>
-    <div class="flex items-center gap-3 pt-2">
+    <div class="flex items-center gap-3 pt-2 border-t border-border">
         <button type="submit" class="btn btn-primary">Perbarui</button>
         <a href="{{ route('subjects.index') }}" class="btn btn-ghost">Batal</a>
     </div>

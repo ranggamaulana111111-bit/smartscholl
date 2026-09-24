@@ -2,83 +2,85 @@
 
 @section('title', 'Tambah Guru')
 @section('content')
-<div class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-forest-950">Tambah Guru</h1>
-    <p class="text-sm text-forest-700/70 mt-1">Lengkapi data guru dan tenaga pendidik.</p>
-</div>
+<x-page-head
+    eyebrow="Data Guru"
+    title="Tambah Guru"
+    description="Lengkapi data guru dan tenaga pendidik."
+>
+    <x-slot:actions>
+        <a href="{{ route('teachers.index') }}" class="btn btn-ghost btn-sm">Kembali ke daftar</a>
+    </x-slot:actions>
+</x-page-head>
 
-<form method="POST" action="{{ route('teachers.store') }}" class="max-w-2xl bg-paper-50 border border-forest-100 rounded-md p-6 space-y-5">
+<form method="POST" action="{{ route('teachers.store') }}" class="max-w-3xl panel p-6 sm:p-8 space-y-6">
     @csrf
 
     <div>
-        <label for="name" class="block text-sm font-medium text-forest-800 mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
+        <label for="name" class="label">Nama Lengkap <span class="text-danger">*</span></label>
         <input type="text" id="name" name="name" value="{{ old('name') }}"
-            class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none @error('name') border-red-400 @enderror">
+            class="input @error('name') border-danger @enderror" @error('name') aria-invalid="true" @enderror>
         @error('name')
-            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            <p class="error-text">{{ $message }}</p>
         @enderror
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-            <label for="nuptk" class="block text-sm font-medium text-forest-800 mb-1">NUPTK</label>
+            <label for="nuptk" class="label">NUPTK</label>
             <input type="text" id="nuptk" name="nuptk" value="{{ old('nuptk') }}" maxlength="16"
-                class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none @error('nuptk') border-red-400 @enderror">
+                class="input @error('nuptk') border-danger @enderror" @error('nuptk') aria-invalid="true" @enderror>
             @error('nuptk')
-                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                <p class="error-text">{{ $message }}</p>
             @enderror
         </div>
         <div>
-            <label for="nip" class="block text-sm font-medium text-forest-800 mb-1">NIP</label>
-            <input type="text" id="nip" name="nip" value="{{ old('nip') }}" maxlength="18"
-                class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">
+            <label for="nip" class="label">NIP</label>
+            <input type="text" id="nip" name="nip" value="{{ old('nip') }}" maxlength="18" class="input">
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-            <label for="subject_id" class="block text-sm font-medium text-forest-800 mb-1">Mata Pelajaran Utama</label>
-            <select id="subject_id" name="subject_id" class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none @error('subject_id') border-red-400 @enderror">
+            <label for="subject_id" class="label">Mata Pelajaran Utama</label>
+            <select id="subject_id" name="subject_id" class="input @error('subject_id') border-danger @enderror" @error('subject_id') aria-invalid="true" @enderror>
                 <option value="">-- Pilih --</option>
                 @foreach ($subjects as $subject)
                     <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                 @endforeach
             </select>
-            <label for="subject_text" class="block text-xs text-forest-600 mt-2 mb-1">Mapel lain (catatan bebas, opsional)</label>
-            <input type="text" id="subject_text" name="subject_text" value="{{ old('subject_text') }}" maxlength="100"
-                class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">
+            <label for="subject_text" class="label mt-4">Mapel lain (catatan bebas)</label>
+            <input type="text" id="subject_text" name="subject_text" value="{{ old('subject_text') }}" maxlength="100" class="input">
             @error('subject_id')
-                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                <p class="error-text">{{ $message }}</p>
             @enderror
         </div>
         <div>
-            <label for="employment_status" class="block text-sm font-medium text-forest-800 mb-1">Status Kepegawaian <span class="text-red-500">*</span></label>
-            <select id="employment_status" name="employment_status" class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none @error('employment_status') border-red-400 @enderror">
+            <label for="employment_status" class="label">Status Kepegawaian <span class="text-danger">*</span></label>
+            <select id="employment_status" name="employment_status" class="input @error('employment_status') border-danger @enderror" @error('employment_status') aria-invalid="true" @enderror>
                 <option value="">-- Pilih --</option>
                 <option value="gty" @selected(old('employment_status') === 'gty')>GTY (Guru Tetap Yayasan)</option>
                 <option value="ptt" @selected(old('employment_status') === 'ptt')>PTT (Guru Tidak Tetap)</option>
                 <option value="asn" @selected(old('employment_status') === 'asn')>ASN</option>
             </select>
             @error('employment_status')
-                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                <p class="error-text">{{ $message }}</p>
             @enderror
         </div>
     </div>
 
     <div>
-        <label for="address" class="block text-sm font-medium text-forest-800 mb-1">Alamat</label>
-        <textarea id="address" name="address" rows="2" class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">{{ old('address') }}</textarea>
+        <label for="address" class="label">Alamat</label>
+        <textarea id="address" name="address" rows="2" class="input">{{ old('address') }}</textarea>
     </div>
 
     <div>
-        <label for="phone" class="block text-sm font-medium text-forest-800 mb-1">No. HP / Telepon</label>
-        <input type="text" id="phone" name="phone" value="{{ old('phone') }}" maxlength="20"
-            class="w-full px-3 py-2 rounded-md border border-forest-200 bg-paper-50 text-forest-950 text-sm focus:border-gold-500 outline-none">
+        <label for="phone" class="label">No. HP / Telepon</label>
+        <input type="text" id="phone" name="phone" value="{{ old('phone') }}" maxlength="20" class="input">
     </div>
 
-    <div class="flex items-center gap-3 pt-2">
-        <button type="submit" class="px-5 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">Simpan</button>
-        <a href="{{ route('teachers.index') }}" class="px-5 py-2 text-sm text-forest-700 hover:text-forest-900 transition-colors">Batal</a>
+    <div class="flex items-center gap-3 pt-2 border-t border-border">
+        <button type="submit" class="btn btn-primary">Simpan Guru</button>
+        <a href="{{ route('teachers.index') }}" class="btn btn-ghost">Batal</a>
     </div>
 </form>
 @endsection

@@ -25,28 +25,6 @@
     --color-warning: #f39c12;
     --color-danger: #e74c3c;
 
-    --color-forest-50: #f9fafb;
-    --color-forest-100: #f3f4f6;
-    --color-forest-200: #e5e7eb;
-    --color-forest-300: #d1d5db;
-    --color-forest-400: #9ca3af;
-    --color-forest-500: #6b7280;
-    --color-forest-600: #4b5563;
-    --color-forest-700: #374151;
-    --color-forest-800: #1f2937;
-    --color-forest-900: #111827;
-    --color-forest-950: #030712;
-
-    --color-paper-50: #ffffff;
-    --color-paper-100: #f5f5f5;
-    --color-paper-200: #e5e7eb;
-    --color-paper-300: #d1d5db;
-
-    --color-gold-300: #fde68a;
-    --color-gold-400: #ffc906;
-    --color-gold-500: #ffb700;
-    --color-gold-600: #e6a817;
-
     --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
     --shadow-focus: 0 0 0 3px rgba(255, 201, 6, 0.3);
@@ -55,6 +33,12 @@
     --duration-base: 250ms;
     --duration-slow: 400ms;
     --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 9999px;
 }
 
 @layer base {
@@ -212,6 +196,39 @@
         transform: translateY(-2px);
     }
 
+    .panel {
+        background-color: #ffffff;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+    }
+
+    .link {
+        color: var(--color-text);
+        text-decoration: underline;
+        text-decoration-color: var(--color-accent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+        transition: color var(--duration-fast);
+    }
+
+    .link:hover {
+        color: var(--color-accent);
+    }
+
+    .link-danger {
+        color: var(--color-danger);
+        text-decoration: underline;
+        text-decoration-color: var(--color-danger);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+        transition: color var(--duration-fast);
+    }
+
+    .link-danger:hover {
+        opacity: 0.8;
+    }
+
     .badge {
         display: inline-flex;
         align-items: center;
@@ -262,12 +279,48 @@
         right: 16px;
         background-color: #1a1a1a;
         color: #ffffff;
-        padding: 12px 16px;
+        padding: 14px 16px 14px 20px;
         border-radius: 8px;
+        border-left: 4px solid var(--color-accent);
         box-shadow: var(--shadow-elevated);
         z-index: 100;
         max-width: 360px;
+        font-size: 14px;
+        line-height: 1.5;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
         animation: toast-in var(--duration-base) var(--ease-standard);
+    }
+
+    .toast-success {
+        border-left-color: var(--color-success);
+    }
+
+    .toast-warning {
+        border-left-color: var(--color-warning);
+    }
+
+    .toast-error {
+        border-left-color: var(--color-danger);
+    }
+
+    .toast-close {
+        flex-shrink: 0;
+        border: none;
+        background: transparent;
+        color: #b3b3b3;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        min-width: 32px;
+        min-height: 32px;
+        border-radius: 4px;
+    }
+
+    .toast-close:hover {
+        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.1);
     }
 
     @keyframes toast-in {
@@ -386,6 +439,191 @@
 
     input[type="checkbox"]:checked {
         background-color: var(--color-primary);
+    }
+
+    .switch {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .switch__track {
+        position: relative;
+        display: block;
+        width: 44px;
+        height: 24px;
+        border-radius: var(--radius-pill);
+        background-color: var(--color-border);
+        transition: background-color var(--duration-fast);
+    }
+
+    .switch__track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        transition: transform var(--duration-fast);
+    }
+
+    .switch input:checked + .switch__track {
+        background-color: var(--color-success);
+    }
+
+    .switch input:checked + .switch__track::after {
+        transform: translateX(20px);
+    }
+
+    .switch input:focus-visible + .switch__track {
+        box-shadow: var(--shadow-focus);
+    }
+
+    .qr-card {
+        position: relative;
+        overflow: hidden;
+        width: min(360px, 100%);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background-color: #ffffff;
+        box-shadow: var(--shadow-card);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .qr-card::after {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+    }
+
+    .qr-card__qr {
+        width: 120px;
+        height: 120px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--color-border);
+        background-color: #ffffff;
+        border-radius: var(--radius-md);
+        padding: 8px;
+    }
+
+    .qr-card__qr svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .qr-card__school {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-text);
+    }
+
+    .qr-card__sep {
+        height: 1px;
+        background: linear-gradient(90deg, var(--color-accent), transparent);
+        margin: 6px 0;
+    }
+
+    .qr-card__name {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--color-text);
+    }
+
+    .qr-card__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .qr-card__row span {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+    }
+
+    .qr-card__row strong {
+        font-weight: 600;
+        color: var(--color-text);
+    }
+
+    .cube-scene {
+        perspective: 700px;
+    }
+
+    .cube {
+        --cube-size: 88px;
+        position: relative;
+        width: var(--cube-size);
+        height: var(--cube-size);
+        transform-style: preserve-3d;
+        animation: cube-spin 16s linear infinite;
+    }
+
+    .cube--sm {
+        --cube-size: 60px;
+    }
+
+    .cube__face {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: calc(var(--cube-size) * 0.45);
+        color: var(--color-accent);
+        background: linear-gradient(145deg, #1a1a1a, #0d0d0d 60%, #1a1a1a);
+        border: 1px solid rgba(255, 201, 6, 0.4);
+        border-radius: 6px;
+        backface-visibility: hidden;
+    }
+
+    .cube__face--front  { transform: rotateY(0deg)   translateZ(calc(var(--cube-size) / 2)); }
+    .cube__face--back   { transform: rotateY(180deg)  translateZ(calc(var(--cube-size) / 2)); }
+    .cube__face--right  { transform: rotateY(90deg)   translateZ(calc(var(--cube-size) / 2)); }
+    .cube__face--left   { transform: rotateY(-90deg)  translateZ(calc(var(--cube-size) / 2)); }
+    .cube__face--top    { transform: rotateX(90deg)   translateZ(calc(var(--cube-size) / 2)); }
+    .cube__face--bottom { transform: rotateX(-90deg)  translateZ(calc(var(--cube-size) / 2)); }
+
+    @keyframes cube-spin {
+        from { transform: rotateX(-16deg) rotateY(0deg); }
+        to   { transform: rotateX(-16deg) rotateY(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cube {
+            animation: none;
+            transform: rotateX(-16deg) rotateY(24deg);
+        }
     }
 }
 

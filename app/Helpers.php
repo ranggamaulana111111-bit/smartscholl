@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\Setting;
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -24,12 +26,47 @@ if (! function_exists('currentTenantId')) {
     }
 }
 
+if (! function_exists('setting')) {
+    function setting(string $key, mixed $default = null): mixed
+    {
+        [$group, $name] = explode('.', $key, 2);
+
+        $tenantScoped = (bool) config("school-settings.$group.tenant_scoped", false);
+        $cfg = config("school-settings.$group.fields.$name");
+
+        $query = Setting::query()->where('group', $group)->where('key', $name);
+
+        if ($tenantScoped) {
+            $query->where('tenant_id', currentTenantId() ?: Tenant::query()
+                ->where('status', 'active')
+                ->orderBy('created_at')
+                ->value('id'));
+        } else {
+            $query->whereNull('tenant_id');
+        }
+
+        $value = $query->value('value');
+
+        if (is_null($value) || $value === '') {
+            return $default ?? ($cfg['default'] ?? null);
+        }
+
+        return match ($cfg['type'] ?? 'text') {
+            'number' => (int) $value,
+            'toggle' => $value === '1',
+            default => $value,
+        };
+    }
+}
+
 if (! function_exists('deskripsiCapaian')) {
     function deskripsiCapaian(float $score): string
     {
+        $kkm = (int) setting('penilaian.kkm', 75);
+
         return match (true) {
             $score >= 90 => 'Sangat Baik (A)',
-            $score >= 75 => 'Baik (B)',
+            $score >= $kkm => 'Baik (B)',
             $score >= 60 => 'Cukup (C)',
             default => 'Perlu Bimbingan (D)',
         };

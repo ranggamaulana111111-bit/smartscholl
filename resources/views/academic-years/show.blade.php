@@ -2,74 +2,82 @@
 
 @section('title', 'Detail '.$academicYear->name)
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('academic-years.index') }}" class="text-sm text-forest-700 hover:text-gold-600 transition-colors">&larr; Kembali</a>
-    <h1 class="font-display text-2xl font-semibold text-forest-950 mt-2">Detail Tahun Ajaran</h1>
-</div>
+<x-page-head
+    eyebrow="Data Tahun Ajaran"
+    :title="$academicYear->name"
+    :description="'Semester ' . $academicYear->semester"
+>
+    <x-slot:actions>
+        <a href="{{ route('academic-years.edit', $academicYear) }}" class="btn btn-primary btn-sm">Edit</a>
+        <a href="{{ route('academic-years.index') }}" class="btn btn-ghost btn-sm">Kembali</a>
+    </x-slot:actions>
+</x-page-head>
 
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5">
-        <p class="text-xs text-forest-700/60 uppercase">Nama</p>
-        <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $academicYear->name }}</p>
+<x-panel class="p-6 sm:p-8 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div>
+            <p class="text-xs text-text-muted uppercase">Nama</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $academicYear->name }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-text-muted uppercase">Semester</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text capitalize">{{ $academicYear->semester }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-text-muted uppercase">Periode</p>
+            <p class="mt-1 font-medium text-text">{{ $academicYear->start_date->translatedFormat('d M Y') }} s.d. {{ $academicYear->end_date->translatedFormat('d M Y') }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-text-muted uppercase">Status</p>
+            <p class="mt-1">
+                @if($academicYear->is_active)
+                    <span class="badge badge-success">Aktif</span>
+                @else
+                    <span class="badge">Nonaktif</span>
+                @endif
+            </p>
+        </div>
     </div>
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5">
-        <p class="text-xs text-forest-700/60 uppercase">Semester</p>
-        <p class="mt-1 font-display text-lg font-semibold text-forest-950 capitalize">{{ $academicYear->semester }}</p>
-    </div>
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5">
-        <p class="text-xs text-forest-700/60 uppercase">Periode</p>
-        <p class="mt-1 font-medium text-forest-950">{{ $academicYear->start_date->translatedFormat('d M Y') }} s.d. {{ $academicYear->end_date->translatedFormat('d M Y') }}</p>
-    </div>
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5">
-        <p class="text-xs text-forest-700/60 uppercase">Status</p>
-        <p class="mt-1">
-            @if($academicYear->is_active)
-                <span class="inline-flex items-center px-2 py-1 rounded bg-forest-600 text-paper-50 text-xs font-medium">Aktif</span>
-            @else
-                <span class="inline-flex items-center px-2 py-1 rounded bg-paper-200 text-forest-700 text-xs font-medium">Nonaktif</span>
-            @endif
-        </p>
-    </div>
-</div>
+</x-panel>
 
 <div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5 text-center">
-        <p class="text-xs text-forest-700/60 uppercase">Rombel</p>
-        <p class="mt-1 font-display text-2xl font-semibold text-forest-950">{{ $rombels->count() }}</p>
-    </div>
-    <div class="bg-paper-50 border border-forest-100 rounded-md p-5 text-center">
-        <p class="text-xs text-forest-700/60 uppercase">Total Siswa</p>
-        <p class="mt-1 font-display text-2xl font-semibold text-forest-950">{{ $totalStudents }}</p>
-    </div>
+    <x-panel class="p-5 text-center">
+        <p class="text-xs text-text-muted uppercase">Rombel</p>
+        <p class="mt-1 font-display text-2xl font-semibold text-text">{{ $rombels->count() }}</p>
+    </x-panel>
+    <x-panel class="p-5 text-center">
+        <p class="text-xs text-text-muted uppercase">Total Siswa</p>
+        <p class="mt-1 font-display text-2xl font-semibold text-text">{{ $totalStudents }}</p>
+    </x-panel>
 </div>
 
-<div class="bg-paper-50 border border-forest-100 rounded-md overflow-hidden">
-    <div class="px-4 py-3 bg-forest-50 border-b border-forest-100">
-        <h2 class="text-sm font-medium text-forest-800">Daftar Rombel</h2>
+<x-panel class="overflow-hidden">
+    <div class="px-4 py-3 bg-surface border-b border-border">
+        <h2 class="text-sm font-medium text-text">Daftar Rombel</h2>
     </div>
     @if($rombels->isEmpty())
-        <div class="px-4 py-10 text-center text-sm text-forest-700/70">Belum ada rombel pada tahun ajaran ini.</div>
+        <div class="px-4 py-10 text-center text-sm text-text-muted">Belum ada rombel pada tahun ajaran ini.</div>
     @else
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="table">
                 <thead>
-                    <tr class="bg-forest-50 text-left text-forest-800 border-b border-forest-100">
-                        <th class="px-4 py-3 font-medium w-12">No</th>
-                        <th class="px-4 py-3 font-medium">Nama</th>
-                        <th class="px-4 py-3 font-medium">Tingkat</th>
-                        <th class="px-4 py-3 font-medium">Wali Kelas</th>
-                        <th class="px-4 py-3 font-medium">Siswa</th>
+                    <tr>
+                        <th class="w-12">No</th>
+                        <th>Nama</th>
+                        <th>Tingkat</th>
+                        <th>Wali Kelas</th>
+                        <th>Siswa</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-forest-50">
+                <tbody>
                     @foreach($rombels as $i => $rombel)
-                        <tr class="hover:bg-forest-50/50 transition-colors">
-                            <td class="px-4 py-3 text-forest-700">{{ $i + 1 }}</td>
-                            <td class="px-4 py-3 font-medium text-forest-950">{{ $rombel->name }}</td>
-                            <td class="px-4 py-3 text-forest-700">{{ $rombel->grade_level }}</td>
-                            <td class="px-4 py-3 text-forest-700">{{ $rombel->homeroomTeacher?->name ?? '-' }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2 py-1 rounded bg-forest-100 text-forest-800 text-xs font-medium">{{ $rombel->students_count }}</span>
+                        <tr>
+                            <td class="text-text-muted">{{ $i + 1 }}</td>
+                            <td class="font-medium text-text">{{ $rombel->name }}</td>
+                            <td class="text-text-muted">{{ $rombel->grade_level }}</td>
+                            <td class="text-text-muted">{{ $rombel->homeroomTeacher?->name ?? '-' }}</td>
+                            <td>
+                                <span class="badge">{{ $rombel->students_count }}</span>
                             </td>
                         </tr>
                     @endforeach
@@ -77,10 +85,5 @@
             </table>
         </div>
     @endif
-</div>
-
-<div class="flex items-center gap-3 mt-6">
-    <a href="{{ route('academic-years.edit', $academicYear) }}" class="inline-flex items-center px-4 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">Edit</a>
-    <a href="{{ route('academic-years.index') }}" class="text-sm text-forest-700 hover:text-forest-900 transition-colors">Kembali</a>
-</div>
+</x-panel>
 @endsection

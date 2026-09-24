@@ -13,10 +13,5 @@ class TenantSeeder extends Seeder
             ['domain' => 'sman1.smartschool.id'],
             ['name' => 'SMA Nusantara 1', 'status' => 'active'],
         );
-
-        Tenant::updateOrCreate(
-            ['domain' => 'smpharapan.smartschool.id'],
-            ['name' => 'SMP Harapan Bangsa', 'status' => 'active'],
-        );
     }
 }

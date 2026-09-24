@@ -23,7 +23,7 @@ class ScheduleRequest extends FormRequest
 
         return [
             'academic_year_id' => [
-                'required',
+                'sometimes',
                 'integer',
                 Rule::exists('academic_years', 'id')->where(
                     fn ($query) => $query->where('is_active', true)
@@ -82,6 +82,21 @@ class ScheduleRequest extends FormRequest
         $validator->after(function ($validator) {
             $tenantId = currentTenantId();
             $academicYearId = $this->input('academic_year_id');
+
+            if (! $academicYearId) {
+                $academicYearId = AcademicYear::query()
+                    ->where('is_active', true)
+                    ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
+                    ->value('id');
+            }
+
+            if (! $academicYearId) {
+                $validator->errors()->add('academic_year_id', 'Tahun ajaran aktif tidak ditemukan pada sekolah ini.');
+
+                return;
+            }
+
+            $academicYearId = (int) $academicYearId;
             $day = $this->input('day_of_week');
             $start = ($this->input('start_time') ?? '').':00';
             $end = ($this->input('end_time') ?? '').':00';

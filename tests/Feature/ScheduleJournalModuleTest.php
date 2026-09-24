@@ -68,6 +68,42 @@ class ScheduleJournalModuleTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_schedule_without_academic_year_field(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('schedules.store'), [
+                'user_id' => $this->guru->id,
+                'subject_id' => $this->subject->id,
+                'rombel_id' => $this->rombel->id,
+                'day_of_week' => 2,
+                'start_time' => '08:00',
+                'end_time' => '09:30',
+            ])
+            ->assertRedirect(route('schedules.index'));
+
+        $this->assertDatabaseHas('schedules', [
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'user_id' => $this->guru->id,
+        ]);
+    }
+
+    public function test_schedule_store_requires_active_academic_year(): void
+    {
+        $this->year->update(['is_active' => false]);
+
+        $this->actingAs($this->admin)
+            ->post(route('schedules.store'), [
+                'user_id' => $this->guru->id,
+                'subject_id' => $this->subject->id,
+                'rombel_id' => $this->rombel->id,
+                'day_of_week' => 2,
+                'start_time' => '08:00',
+                'end_time' => '09:30',
+            ])
+            ->assertSessionHasErrors('academic_year_id');
+    }
+
     public function test_overlapping_schedule_rejected(): void
     {
         Schedule::factory()->create([

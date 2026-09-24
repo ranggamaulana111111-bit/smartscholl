@@ -137,11 +137,11 @@
                             <tr>
                                 <td class="text-text-muted">{{ $g->student->nisn ?? '-' }}</td>
                                 <td class="font-medium">{{ $g->student->name ?? '-' }}</td>
-                                <td class="text-right font-display font-semibold {{ $g->score >= 75 ? 'text-text' : 'text-danger' }}">
+                                <td class="text-right font-display font-semibold {{ $g->score >= (int) setting('penilaian.kkm', 75) ? 'text-text' : 'text-danger' }}">
                                     {{ number_format($g->score, 2) }}
                                 </td>
                                 <td>
-                                    <span class="badge {{ $g->score >= 75 ? 'badge-success' : 'badge-danger' }}">{{ deskripsiCapaian((float) $g->score) }}</span>
+                                    <span class="badge {{ $g->score >= (int) setting('penilaian.kkm', 75) ? 'badge-success' : 'badge-danger' }}">{{ deskripsiCapaian((float) $g->score) }}</span>
                                 </td>
                                 <td class="text-text-muted">{{ $g->note ?? '-' }}</td>
                             </tr>

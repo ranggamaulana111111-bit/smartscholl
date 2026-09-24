@@ -183,6 +183,12 @@ class AttendanceTest extends TestCase
         $this->actingAs($guru)
             ->get(route('attendance.manual'))
             ->assertOk()
+            ->assertSee($schedule->subject->name)
+            ->assertSee('X-1');
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualSchedule', $schedule->id))
+            ->assertOk()
             ->assertSee($binaan->name)
             ->assertDontSee('Siswa Luar Binaan');
 
@@ -583,6 +589,79 @@ class AttendanceTest extends TestCase
 
         $this->actingAs($guru)
             ->get(route('attendance.manualSchedule', $schedule->id))
+            ->assertForbidden();
+    }
+
+    public function test_guru_can_open_manual_meetings_for_own_schedule(): void
+    {
+        $guru = User::factory()->guru($this->tenantA->id)->create();
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+
+        $homeroom = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-1',
+            'homeroom_teacher_id' => $guru->id,
+        ]);
+
+        $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $guru->id, $homeroom->id, '2026-09-03');
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualMeetings', $schedule->id))
+            ->assertOk()
+            ->assertSee('Pertemuan 1')
+            ->assertSee('Absen Manual Kelas X-1');
+    }
+
+    public function test_manual_meetings_show_filled_count(): void
+    {
+        $guru = User::factory()->guru($this->tenantA->id)->create();
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+
+        $homeroom = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-1',
+            'homeroom_teacher_id' => $guru->id,
+        ]);
+
+        $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $homeroom->id, 'nisn' => '0039123410']);
+        $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $guru->id, $homeroom->id, '2026-09-03');
+
+        Attendance::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'schedule_id' => $schedule->id,
+            'academic_year_id' => $year->id,
+            'student_id' => $student->id,
+            'type' => 'lesson',
+            'status' => 'hadir',
+            'date' => '2026-01-01',
+            'source' => 'manual',
+        ]);
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualMeetings', $schedule->id))
+            ->assertOk()
+            ->assertSee('Diisi 1 siswa');
+    }
+
+    public function test_guru_cannot_open_manual_meetings_for_other_teachers_schedule(): void
+    {
+        $guru = User::factory()->guru($this->tenantA->id)->create();
+        $otherGuru = User::factory()->guru($this->tenantA->id)->create();
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+
+        $rombel = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-2',
+            'homeroom_teacher_id' => $guru->id,
+        ]);
+
+        $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $otherGuru->id, $rombel->id, '2026-09-03');
+
+        $this->actingAs($guru)
+            ->get(route('attendance.manualMeetings', $schedule->id))
             ->assertForbidden();
     }
 

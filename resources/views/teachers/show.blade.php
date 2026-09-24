@@ -2,90 +2,79 @@
 
 @section('title', 'Detail '.$teacher->name)
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('teachers.index') }}" class="text-sm text-forest-700 hover:text-gold-600 transition-colors">&larr; Kembali</a>
-    <h1 class="font-display text-2xl font-semibold text-forest-950 mt-2">Detail Guru</h1>
-</div>
+<x-page-head
+    eyebrow="Data Guru"
+    :title="$teacher->name"
+    :description="$teacher->subject?->name ?? ($teacher->subject_text ?? 'Guru mata pelajaran')"
+>
+    <x-slot:actions>
+        <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-primary btn-sm">Edit</a>
+        <a href="{{ route('teachers.index') }}" class="btn btn-ghost btn-sm">Kembali</a>
+    </x-slot:actions>
+</x-page-head>
 
-<div class="bg-paper-50 border border-forest-100 rounded-md p-6 mb-6">
+<x-panel class="p-6 sm:p-8 mb-6">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">NUPTK</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->nuptk ?? '-' }}</p>
+            <p class="text-xs text-text-muted uppercase">NUPTK</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $teacher->nuptk ?? '-' }}</p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">NIP</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->nip ?? '-' }}</p>
+            <p class="text-xs text-text-muted uppercase">NIP</p>
+            <p class="mt-1 font-display text-lg font-semibold text-text">{{ $teacher->nip ?? '-' }}</p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Nama</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->name }}</p>
+            <p class="text-xs text-text-muted uppercase">Status Kepegawaian</p>
+            <p class="mt-1"><span class="badge">{{ match($teacher->employment_status) { 'asn' => 'ASN', 'gty' => 'GTY', 'ptt' => 'PTT' } }}</span></p>
         </div>
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Mata Pelajaran</p>
-            <p class="mt-1 font-display text-lg font-semibold text-forest-950">{{ $teacher->subject?->name ?? ($teacher->subject_text ?? '-') }}</p>
+            <p class="text-xs text-text-muted uppercase">Telepon</p>
+            <p class="mt-1 text-sm text-text">{{ $teacher->phone ?? '-' }}</p>
         </div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-5">
+    <div class="grid grid-cols-1 mt-5 pt-5 border-t border-border">
         <div>
-            <p class="text-xs text-forest-700/60 uppercase">Status Kepegawaian</p>
-            <p class="mt-1">
-                <span class="inline-flex items-center px-2 py-1 rounded bg-forest-100 text-forest-800 text-xs font-medium">
-                    {{ match($teacher->employment_status) { 'asn' => 'ASN', 'gty' => 'GTY', 'ptt' => 'PTT' } }}
-                </span>
-            </p>
-        </div>
-        <div>
-            <p class="text-xs text-forest-700/60 uppercase">Telepon</p>
-            <p class="mt-1 text-sm text-forest-950">{{ $teacher->phone ?? '-' }}</p>
-        </div>
-        <div class="col-span-2">
-            <p class="text-xs text-forest-700/60 uppercase">Alamat</p>
-            <p class="mt-1 text-sm text-forest-950">{{ $teacher->address ?? '-' }}</p>
+            <p class="text-xs text-text-muted uppercase">Alamat</p>
+            <p class="mt-1 text-sm text-text">{{ $teacher->address ?? '-' }}</p>
         </div>
     </div>
-</div>
+</x-panel>
 
-<div class="bg-paper-50 border border-forest-100 rounded-md overflow-hidden">
-    <div class="px-4 py-3 bg-forest-50 border-b border-forest-100">
-        <h2 class="text-sm font-medium text-forest-800">Jadwal Mengajar</h2>
+<x-panel class="overflow-hidden">
+    <div class="px-4 py-3 bg-surface border-b border-border">
+        <h2 class="text-sm font-medium text-text">Jadwal Mengajar</h2>
     </div>
     @if($schedules->isEmpty())
-        <div class="px-4 py-10 text-center text-sm text-forest-700/70">
+        <div class="px-4 py-10 text-center text-sm text-text-muted">
             Belum ada jadwal mengajar untuk guru ini.
         </div>
     @else
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="table">
                 <thead>
-                    <tr class="bg-forest-50 text-left text-forest-800 border-b border-forest-100">
-                        <th class="px-4 py-3 font-medium w-12">No</th>
-                        <th class="px-4 py-3 font-medium">Hari</th>
-                        <th class="px-4 py-3 font-medium">Mata Pelajaran</th>
-                        <th class="px-4 py-3 font-medium">Rombel</th>
-                        <th class="px-4 py-3 font-medium">Jam</th>
+                    <tr>
+                        <th class="w-12">No</th>
+                        <th>Hari</th>
+                        <th>Mata Pelajaran</th>
+                        <th>Rombel</th>
+                        <th>Jam</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-forest-50">
+                <tbody>
                     @foreach($schedules as $i => $schedule)
-                        <tr class="hover:bg-forest-50/50 transition-colors">
-                            <td class="px-4 py-3 text-forest-700">{{ $i + 1 }}</td>
-                            <td class="px-4 py-3 font-medium text-forest-950">{{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}</td>
-                            <td class="px-4 py-3 text-forest-700">{{ $schedule->subject->name ?? '-' }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2 py-1 rounded bg-forest-100 text-forest-800 text-xs font-medium">{{ $schedule->rombel->name ?? '-' }}</span>
+                        <tr>
+                            <td class="text-text-muted">{{ $i + 1 }}</td>
+                            <td class="font-medium text-text">{{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}</td>
+                            <td class="text-text-muted">{{ $schedule->subject->name ?? '-' }}</td>
+                            <td>
+                                <span class="badge">{{ $schedule->rombel->name ?? '-' }}</span>
                             </td>
-                            <td class="px-4 py-3 text-forest-700 whitespace-nowrap">{{ $schedule->start_time?->format('H:i') }} - {{ $schedule->end_time?->format('H:i') }}</td>
+                            <td class="text-text-muted whitespace-nowrap">{{ $schedule->start_time?->format('H:i') }} - {{ $schedule->end_time?->format('H:i') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
     @endif
-</div>
-
-<div class="flex items-center gap-3 mt-6">
-    <a href="{{ route('teachers.edit', $teacher) }}" class="inline-flex items-center px-4 py-2 bg-forest-800 text-paper-50 text-sm font-medium rounded-md hover:bg-forest-700 transition-colors">Edit</a>
-    <a href="{{ route('teachers.index') }}" class="text-sm text-forest-700 hover:text-forest-900 transition-colors">Kembali</a>
-</div>
+</x-panel>
 @endsection

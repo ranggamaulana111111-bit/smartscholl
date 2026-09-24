@@ -12,12 +12,6 @@ use Illuminate\Support\Collection;
 
 class EarlyWarningService
 {
-    private const ABSENCE_STREAK_DAYS = 3;
-
-    private const ATTENDANCE_RATE_THRESHOLD = 80; // percent
-
-    private const BELOW_KKM_SCORE = 75;
-
     public function runCheck(?string $tenantId = null): Collection
     {
         $academicYear = AcademicYear::query()
@@ -79,14 +73,14 @@ class EarlyWarningService
 
             $streak++;
 
-            if ($streak >= self::ABSENCE_STREAK_DAYS) {
+            if ($streak >= (int) setting('peringatan.absence_streak_days', 3)) {
                 break;
             }
 
             $cursor->subDay();
         }
 
-        if ($streak >= self::ABSENCE_STREAK_DAYS) {
+        if ($streak >= (int) setting('peringatan.absence_streak_days', 3)) {
             $logs->push($this->createLog($student, 'absence_streak', sprintf(
                 'Siswa tidak hadir tanpa keterangan %d hari sekolah berturut-turut (terakhir %s).',
                 $streak,
@@ -123,12 +117,13 @@ class EarlyWarningService
         }
 
         $rate = round(($total / $all) * 100);
+        $threshold = (int) setting('peringatan.attendance_rate_threshold', 80);
 
-        if ($rate < self::ATTENDANCE_RATE_THRESHOLD) {
+        if ($rate < $threshold) {
             $logs->push($this->createLog($student, 'attendance_rate', sprintf(
                 'Presensi kumulatif siswa %.0f%% (di bawah ambang batas %d%%).',
                 $rate,
-                self::ATTENDANCE_RATE_THRESHOLD
+                $threshold
             )));
         }
 
@@ -148,7 +143,7 @@ class EarlyWarningService
                     ->whereIn('category', ['formatif', 'uts', 'uas'])
                     ->when($academicYear, fn ($yq) => $yq->where('academic_year_id', $academicYear->id))
             )
-            ->where('score', '<', self::BELOW_KKM_SCORE)
+            ->where('score', '<', (int) setting('penilaian.kkm', 75))
             ->whereBetween('created_at', [now()->subMonths(2), now()])
             ->latest()
             ->get();

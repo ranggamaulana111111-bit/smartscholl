@@ -22,7 +22,10 @@ class SubjectController extends Controller
             $teacherNames = $subject->schedules->pluck('teacher.name')->filter()->unique()->values();
 
             if ($teacherNames->isEmpty()) {
-                $teacherNames = Teacher::where('subject', $subject->name)->pluck('name')->values();
+                $teacherNames = Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
+                    ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
+                    ->pluck('name')
+                    ->values();
             }
 
             $subject->setAttribute('teacher_names', $teacherNames->all());
@@ -41,7 +44,10 @@ class SubjectController extends Controller
         $teacherNames = $subject->schedules->pluck('teacher.name')->filter()->unique()->values();
 
         if ($teacherNames->isEmpty()) {
-            $teacherNames = Teacher::where('subject', $subject->name)->pluck('name')->values();
+            $teacherNames = Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
+                ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
+                ->pluck('name')
+                ->values();
         }
 
         $rombelNames = $subject->schedules->pluck('rombel.name')->filter()->unique()->values();

@@ -2,12 +2,18 @@
 
 @section('title', 'Detail '.$subject->name)
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('subjects.index') }}" class="text-sm text-text-muted hover:text-accent transition-colors">&larr; Kembali</a>
-    <h1 class="font-display text-2xl font-semibold text-text mt-2">Detail Mata Pelajaran</h1>
-</div>
+<x-page-head
+    eyebrow="Data Mata Pelajaran"
+    :title="$subject->name"
+    :description="$subject->code ?? 'Tanpa kode'"
+>
+    <x-slot:actions>
+        <a href="{{ route('subjects.edit', $subject) }}" class="btn btn-primary btn-sm">Edit</a>
+        <a href="{{ route('subjects.index') }}" class="btn btn-ghost btn-sm">Kembali</a>
+    </x-slot:actions>
+</x-page-head>
 
-<div class="card p-6 mb-6">
+<x-panel class="p-6 sm:p-8 mb-6">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
             <p class="text-xs text-text-muted uppercase">Kode Mapel</p>
@@ -39,13 +45,13 @@
         </div>
     </div>
     <div class="mt-5 pt-5 border-t border-border">
-        <span class="{{ $subject->is_active ? 'badge-success' : 'badge-danger' }}">
+        <span class="{{ $subject->is_active ? 'badge badge-success' : 'badge badge-danger' }}">
             {{ $subject->is_active ? 'Aktif' : 'Nonaktif' }}
         </span>
     </div>
-</div>
+</x-panel>
 
-<div class="card overflow-hidden">
+<x-panel class="overflow-hidden">
     <div class="px-4 py-3 bg-surface border-b border-border">
         <h2 class="text-sm font-medium text-text">Jadwal &amp; Pengajar</h2>
     </div>
@@ -59,8 +65,6 @@
                 <thead>
                     <tr>
                         <th class="w-12">No</th>
-                        <th>Kode Mapel</th>
-                        <th>Nama Mata Pelajaran</th>
                         <th>Guru Pengajar</th>
                         <th>Kelas</th>
                         <th>Hari &amp; Jam</th>
@@ -70,8 +74,6 @@
                     @foreach($schedules as $i => $schedule)
                         <tr>
                             <td class="text-text-muted">{{ $i + 1 }}</td>
-                            <td class="text-text-muted">{{ $subject->code ?? '-' }}</td>
-                            <td class="font-semibold text-text">{{ $subject->name }}</td>
                             <td>{{ $schedule->teacher->name ?? '-' }}</td>
                             <td><span class="badge">{{ $schedule->rombel->name ?? '-' }}</span></td>
                             <td class="text-text-muted whitespace-nowrap">
@@ -84,10 +86,5 @@
             </table>
         </div>
     @endif
-</div>
-
-<div class="flex items-center gap-3 mt-6">
-    <a href="{{ route('subjects.edit', $subject) }}" class="btn btn-primary">Edit</a>
-    <a href="{{ route('subjects.index') }}" class="btn btn-ghost">Kembali</a>
-</div>
+</x-panel>
 @endsection

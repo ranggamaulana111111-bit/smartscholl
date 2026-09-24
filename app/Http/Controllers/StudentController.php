@@ -16,8 +16,6 @@ use Illuminate\View\View;
 
 class StudentController extends Controller
 {
-    private const CATEGORY_WEIGHTS = ['tugas' => 20, 'formatif' => 30, 'uts' => 25, 'uas' => 25];
-
     public function index(): View
     {
         $students = Student::with('rombel')
@@ -248,8 +246,15 @@ class StudentController extends Controller
             ->when($year, fn ($q) => $q->whereHas('assessment', fn ($aq) => $aq->where('academic_year_id', $year->id)))
             ->get();
 
+        $weights = [
+            'tugas' => (int) setting('penilaian.bobot_tugas', 20),
+            'formatif' => (int) setting('penilaian.bobot_formatif', 30),
+            'uts' => (int) setting('penilaian.bobot_uts', 25),
+            'uas' => (int) setting('penilaian.bobot_uas', 25),
+        ];
+
         $rows = $grades->groupBy(fn ($g) => $g->assessment->subject_id)
-            ->map(function ($subjectGrades) {
+            ->map(function ($subjectGrades) use ($weights) {
                 $subject = $subjectGrades->first()->assessment->subject;
                 $byCategory = $subjectGrades->groupBy('assessment.category');
 
@@ -257,12 +262,12 @@ class StudentController extends Controller
                 $weighted = [];
                 $coveredWeight = 0;
 
-                foreach (array_keys(self::CATEGORY_WEIGHTS) as $category) {
+                foreach (array_keys($weights) as $category) {
                     $categoryGrades = $byCategory->get($category);
 
                     if ($categoryGrades) {
                         $score = round($categoryGrades->avg('score'), 2);
-                        $weight = $categoryGrades->first()->assessment->weight_percentage ?? self::CATEGORY_WEIGHTS[$category];
+                        $weight = $categoryGrades->first()->assessment->weight_percentage ?? $weights[$category];
                         $aver[$category] = $score;
                         $weighted[$category] = $score * $weight / 100;
                         $coveredWeight += $weight;

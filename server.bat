@@ -1,0 +1,1 @@
+$env:Path = "C:\laragon\bin\php\php-8.2.31-Win32-vs16-x64\;C:\laragon\bin\composer\;" + $env:Path php artisan serve

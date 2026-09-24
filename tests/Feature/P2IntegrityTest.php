@@ -278,4 +278,39 @@ class P2IntegrityTest extends TestCase
             ->assertSee('2024/2025')
             ->assertSee('2025/2026');
     }
+
+    public function test_subject_index_uses_renamed_teacher_columns(): void
+    {
+        $subject = Subject::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Biologi']);
+
+        Teacher::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Guru FK', 'subject_id' => $subject->id, 'subject_text' => null]);
+        Teacher::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Guru Teks', 'subject_id' => null, 'subject_text' => 'biologi']);
+
+        $this->actingAs($this->admin)
+            ->get(route('subjects.index'))
+            ->assertOk()
+            ->assertSee('Biologi')
+            ->assertSee('Guru FK')
+            ->assertSee('Guru Teks');
+
+        $this->actingAs($this->admin)
+            ->get(route('subjects.show', $subject))
+            ->assertOk()
+            ->assertSee('Guru FK');
+    }
+
+    public function test_subject_store_persists_active_status(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('subjects.store'), ['name' => 'TIK', 'code' => 'TIK'])
+            ->assertRedirect(route('subjects.index'));
+
+        $this->assertTrue(Subject::where('tenant_id', $this->tenant->id)->where('name', 'TIK')->value('is_active'));
+
+        $this->actingAs($this->admin)
+            ->post(route('subjects.store'), ['name' => 'Sejarah', 'is_active' => '0'])
+            ->assertRedirect(route('subjects.index'));
+
+        $this->assertFalse(Subject::where('tenant_id', $this->tenant->id)->where('name', 'Sejarah')->value('is_active'));
+    }
 }

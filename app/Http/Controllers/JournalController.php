@@ -50,7 +50,7 @@ class JournalController extends Controller
         return view('journals.index', compact('journals', 'stats'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $year = AcademicYear::where('is_active', true)->first();
         $subjects = Subject::where('is_active', true)->orderBy('name')->get();
@@ -62,7 +62,11 @@ class JournalController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        return view('journals.create', compact('subjects', 'rombels', 'schedules', 'year'));
+        $preselectScheduleId = $request->filled('schedule_id')
+            ? $schedules->firstWhere('id', (int) $request->input('schedule_id'))?->id
+            : null;
+
+        return view('journals.create', compact('subjects', 'rombels', 'schedules', 'year', 'preselectScheduleId'));
     }
 
     public function store(JournalRequest $request): RedirectResponse
