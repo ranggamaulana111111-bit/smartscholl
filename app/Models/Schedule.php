@@ -15,6 +15,7 @@ class Schedule extends Model
     protected $fillable = [
         'tenant_id',
         'academic_year_id',
+        'teacher_id',
         'user_id',
         'subject_id',
         'rombel_id',
@@ -38,7 +39,7 @@ class Schedule extends Model
 
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
     public function subject(): BelongsTo

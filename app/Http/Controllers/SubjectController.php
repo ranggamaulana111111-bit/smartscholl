@@ -19,14 +19,14 @@ class SubjectController extends Controller
             ->withQueryString();
 
         $subjects->getCollection()->transform(function (Subject $subject) {
-            $teacherNames = $subject->schedules->pluck('teacher.name')->filter()->unique()->values();
-
-            if ($teacherNames->isEmpty()) {
-                $teacherNames = Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
-                    ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
-                    ->pluck('name')
-                    ->values();
-            }
+            $teacherNames = $subject->schedules->pluck('teacher.name')->filter()
+                ->merge(
+                    Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
+                        ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
+                        ->pluck('name')
+                )
+                ->unique()
+                ->values();
 
             $subject->setAttribute('teacher_names', $teacherNames->all());
             $subject->setAttribute('rombel_names', $subject->schedules->pluck('rombel.name')->filter()->unique()->values()->all());
@@ -41,14 +41,14 @@ class SubjectController extends Controller
     {
         $subject->load(['schedules.teacher', 'schedules.rombel']);
 
-        $teacherNames = $subject->schedules->pluck('teacher.name')->filter()->unique()->values();
-
-        if ($teacherNames->isEmpty()) {
-            $teacherNames = Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
-                ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
-                ->pluck('name')
-                ->values();
-        }
+        $teacherNames = $subject->schedules->pluck('teacher.name')->filter()
+            ->merge(
+                Teacher::where(fn ($q) => $q->where('subject_id', $subject->id)
+                    ->orWhereRaw('lower(subject_text) = lower(?)', [$subject->name]))
+                    ->pluck('name')
+            )
+            ->unique()
+            ->values();
 
         $rombelNames = $subject->schedules->pluck('rombel.name')->filter()->unique()->values();
 
@@ -92,9 +92,10 @@ class SubjectController extends Controller
         $hasAssessments = $subject->assessments()->exists();
         $hasJournals = $subject->journals()->exists();
         $hasAssignments = Assignment::where('subject_id', $subject->id)->exists();
+        $hasTeachers = Teacher::where('subject_id', $subject->id)->exists();
 
-        if ($hasSchedules || $hasAssessments || $hasJournals || $hasAssignments) {
-            return back()->with('error', 'Mata pelajaran ini masih digunakan oleh jadwal, penilaian, jurnal, atau tugas. Gunakan menu Edit untuk menonaktifkannya.');
+        if ($hasSchedules || $hasAssessments || $hasJournals || $hasAssignments || $hasTeachers) {
+            return back()->with('error', 'Mata pelajaran ini masih digunakan oleh guru, jadwal, penilaian, jurnal, atau tugas. Gunakan menu Edit untuk menonaktifkannya.');
         }
 
         $subject->delete();

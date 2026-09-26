@@ -116,9 +116,12 @@ class P2IntegrityTest extends TestCase
 
     public function test_create_teacher_logs_audit(): void
     {
+        $subject = Subject::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Matematika']);
+
         $this->actingAs($this->admin)
             ->post(route('teachers.store'), [
                 'name' => 'Budi Hartawan',
+                'subject_id' => $subject->id,
                 'employment_status' => 'asn',
             ])
             ->assertRedirect(route('teachers.index'));
@@ -176,6 +179,18 @@ class P2IntegrityTest extends TestCase
         ]);
     }
 
+    public function test_teacher_requires_primary_subject(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('teachers.store'), [
+                'name' => 'Budi Hartawan',
+                'employment_status' => 'asn',
+            ])
+            ->assertSessionHasErrors('subject_id');
+
+        $this->assertDatabaseMissing('teachers', ['name' => 'Budi Hartawan']);
+    }
+
     public function test_teacher_subject_must_belong_to_same_tenant(): void
     {
         $subjectOther = Subject::factory()->create(['tenant_id' => $this->otherTenant->id]);
@@ -188,6 +203,42 @@ class P2IntegrityTest extends TestCase
                 'employment_status' => 'asn',
             ])
             ->assertSessionHasErrors('subject_id');
+    }
+
+    public function test_teacher_primary_subject_cannot_change_while_schedule_exists(): void
+    {
+        $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenant->id]);
+        $currentSubject = Subject::factory()->create(['tenant_id' => $this->tenant->id]);
+        $newSubject = Subject::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Fisika']);
+        $teacher = Teacher::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'subject_id' => $currentSubject->id,
+        ]);
+        $rombel = Rombel::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $year->id,
+        ]);
+        Schedule::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $year->id,
+            'teacher_id' => $teacher->id,
+            'user_id' => $teacher->user_id,
+            'subject_id' => $currentSubject->id,
+            'rombel_id' => $rombel->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->put(route('teachers.update', $teacher), [
+                'nuptk' => '7755766655110999',
+                'nip' => $teacher->nip,
+                'name' => $teacher->name,
+                'subject_id' => $newSubject->id,
+                'employment_status' => $teacher->employment_status,
+            ])
+            ->assertRedirect(route('teachers.index'))
+            ->assertSessionHasErrors('subject_id');
+
+        $this->assertSame($currentSubject->id, $teacher->fresh()->subject_id);
     }
 
     public function test_teacher_show_displays_subject_name(): void
@@ -225,14 +276,15 @@ class P2IntegrityTest extends TestCase
         $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenant->id]);
         $guru = User::factory()->guru($this->tenant->id)->create();
         $guruIdle = User::factory()->guru($this->tenant->id)->create();
-        Teacher::factory()->create(['tenant_id' => $this->tenant->id, 'user_id' => $guru->id]);
-        Teacher::factory()->create(['tenant_id' => $this->tenant->id, 'user_id' => $guruIdle->id]);
         $subject = Subject::factory()->create(['tenant_id' => $this->tenant->id]);
+        $teacher = Teacher::factory()->withUser($guru)->create(['tenant_id' => $this->tenant->id, 'subject_id' => $subject->id]);
+        Teacher::factory()->withUser($guruIdle)->create(['tenant_id' => $this->tenant->id, 'subject_id' => $subject->id]);
         $rombel = Rombel::factory()->create(['tenant_id' => $this->tenant->id, 'academic_year_id' => $year->id]);
 
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $year->id,
+            'teacher_id' => $teacher->id,
             'user_id' => $guru->id,
             'subject_id' => $subject->id,
             'rombel_id' => $rombel->id,

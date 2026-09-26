@@ -12,6 +12,7 @@ use App\Models\Rombel;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +29,8 @@ class NewModulesTest extends TestCase
     private User $guru;
 
     private User $siswa;
+
+    private Teacher $teacher;
 
     private Tenant $tenant;
 
@@ -60,10 +63,15 @@ class NewModulesTest extends TestCase
             'tenant_id' => $tenant->id,
         ]);
 
+        $this->teacher = Teacher::factory()->withUser($this->guru)->create([
+            'tenant_id' => $tenant->id,
+            'subject_id' => $this->subject->id,
+        ]);
+
         $this->rombel = Rombel::factory()->create([
             'tenant_id' => $tenant->id,
             'academic_year_id' => $this->year->id,
-            'homeroom_teacher_id' => $this->guru->id,
+            'homeroom_teacher_id' => $this->teacher->id,
         ]);
 
         $this->student = Student::factory()->create([
@@ -75,6 +83,7 @@ class NewModulesTest extends TestCase
         Schedule::factory()->create([
             'tenant_id' => $tenant->id,
             'academic_year_id' => $this->year->id,
+            'teacher_id' => $this->teacher->id,
             'user_id' => $this->guru->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
@@ -575,11 +584,14 @@ class NewModulesTest extends TestCase
     public function test_guru_cannot_access_student_outside_homeroom(): void
     {
         $guruB = User::factory()->guru($this->tenant->id)->create();
+        $guruBTeacher = Teacher::factory()->withUser($guruB)->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
         $rombelB = Rombel::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
             'name' => 'X-2',
-            'homeroom_teacher_id' => $guruB->id,
+            'homeroom_teacher_id' => $guruBTeacher->id,
         ]);
         $studentB = Student::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -610,11 +622,14 @@ class NewModulesTest extends TestCase
         ]);
 
         $guruB = User::factory()->guru($this->tenant->id)->create();
+        $guruBTeacher = Teacher::factory()->withUser($guruB)->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
         $rombelB = Rombel::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
             'name' => 'X-3',
-            'homeroom_teacher_id' => $guruB->id,
+            'homeroom_teacher_id' => $guruBTeacher->id,
         ]);
         $studentB = Student::factory()->create([
             'tenant_id' => $this->tenant->id,

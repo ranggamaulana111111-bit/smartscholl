@@ -98,6 +98,57 @@ class MasterDataTest extends TestCase
         ]);
     }
 
+    public function test_rombel_homeroom_teacher_is_selected_from_teacher_profiles(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $teacher = Teacher::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'name' => 'Guru Tanpa Akun',
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->get(route('rombels.create'))
+            ->assertOk()
+            ->assertSee('Guru Tanpa Akun');
+
+        $this->actingAs($this->adminA)
+            ->post(route('rombels.store'), [
+                'academic_year_id' => $year->id,
+                'name' => 'X-1',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => $teacher->id,
+            ])
+            ->assertRedirect(route('rombels.index'));
+
+        $rombel = Rombel::query()->where('tenant_id', $this->tenantA->id)->latest('id')->firstOrFail();
+
+        $this->assertSame($teacher->id, $rombel->homeroom_teacher_id);
+        $this->assertTrue($rombel->homeroomTeacher->is($teacher));
+    }
+
+    public function test_rombel_rejects_cross_tenant_homeroom_teacher(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $teacherB = Teacher::factory()->create([
+            'tenant_id' => $this->tenantB->id,
+            'name' => 'Guru Tenant Lain',
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->post(route('rombels.store'), [
+                'academic_year_id' => $year->id,
+                'name' => 'X-1',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => $teacherB->id,
+            ])
+            ->assertSessionHasErrors('homeroom_teacher_id');
+
+        $this->assertDatabaseMissing('rombels', [
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+        ]);
+    }
+
     public function test_student_can_be_created_and_scoped(): void
     {
         $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);
@@ -129,12 +180,14 @@ class MasterDataTest extends TestCase
 
     public function test_teacher_can_be_created(): void
     {
+        $subject = Subject::factory()->create(['tenant_id' => $this->tenantA->id, 'name' => 'Matematika']);
+
         $this->actingAs($this->adminA)
             ->post(route('teachers.store'), [
                 'nuptk' => '7755766655110001',
                 'nip' => '198001012010011001',
                 'name' => 'Budi Hartawan',
-                'subject' => 'Matematika',
+                'subject_id' => $subject->id,
                 'employment_status' => 'asn',
                 'address' => 'Jl. Kenanga',
                 'phone' => '081298765432',
@@ -228,9 +281,15 @@ class MasterDataTest extends TestCase
         $rombel = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
         $subject = Subject::factory()->create(['tenant_id' => $this->tenantA->id, 'code' => 'MTK', 'name' => 'Matematika']);
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = Teacher::factory()->withUser($guru)->create([
+            'tenant_id' => $this->tenantA->id,
+            'name' => $guru->name,
+            'subject_id' => $subject->id,
+        ]);
         Schedule::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
+            'teacher_id' => $teacher->id,
             'user_id' => $guru->id,
             'subject_id' => $subject->id,
             'rombel_id' => $rombel->id,

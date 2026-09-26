@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
+use App\Models\AcademicYear;
+use App\Models\Teacher;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class RombelRequest extends FormRequest
                 Rule::unique('rombels')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('academic_year_id', $this->input('academic_year_id')))->ignore($rombelId),
             ],
             'grade_level' => ['required', 'string', 'max:10'],
-            'homeroom_teacher_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId)))],
+            'homeroom_teacher_id' => ['nullable', 'integer', Rule::exists('teachers', 'id')->where(fn ($q) => $q->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId)))],
         ];
     }
 
@@ -48,11 +49,15 @@ class RombelRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $homeroomTeacherId = $this->input('homeroom_teacher_id');
-            if ($homeroomTeacherId && ! User::where('id', $homeroomTeacherId)
-                ->where('tenant_id', currentTenantId())
-                ->whereIn('role', ['guru', 'admin_sekolah'])
-                ->exists()) {
-                $validator->errors()->add('homeroom_teacher_id', 'Wali kelas harus guru di sekolah ini.');
+            $tenantId = currentTenantId();
+            $academicYearId = $this->input('academic_year_id');
+            $targetTenantId = $tenantId ?: AcademicYear::query()->whereKey($academicYearId)->value('tenant_id');
+
+            if ($homeroomTeacherId && (! $targetTenantId || ! Teacher::query()
+                ->whereKey($homeroomTeacherId)
+                ->where('tenant_id', $targetTenantId)
+                ->exists())) {
+                $validator->errors()->add('homeroom_teacher_id', 'Wali kelas harus profil guru di sekolah ini.');
             }
         });
     }

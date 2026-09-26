@@ -6,7 +6,7 @@ use App\Http\Requests\RombelRequest;
 use App\Models\AcademicYear;
 use App\Models\Rombel;
 use App\Models\Schedule;
-use App\Models\User;
+use App\Models\Teacher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -26,7 +26,7 @@ class RombelController extends Controller
     public function create(): View
     {
         $academicYears = AcademicYear::orderByDesc('name')->get();
-        $teachers = User::whereIn('role', ['guru', 'admin_sekolah'])->orderBy('name')->get();
+        $teachers = Teacher::with('subject')->orderBy('name')->get();
 
         return view('rombels.create', compact('academicYears', 'teachers'));
     }
@@ -60,7 +60,7 @@ class RombelController extends Controller
     public function edit(Rombel $rombel): View
     {
         $academicYears = AcademicYear::orderByDesc('name')->get();
-        $teachers = User::whereIn('role', ['guru', 'admin_sekolah'])->orderBy('name')->get();
+        $teachers = Teacher::with('subject')->orderBy('name')->get();
 
         return view('rombels.edit', compact('rombel', 'academicYears', 'teachers'));
     }

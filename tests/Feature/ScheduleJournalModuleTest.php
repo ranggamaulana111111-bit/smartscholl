@@ -9,6 +9,7 @@ use App\Models\Rombel;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +24,8 @@ class ScheduleJournalModuleTest extends TestCase
     private User $admin;
 
     private User $guru;
+
+    private Teacher $teacher;
 
     private Subject $subject;
 
@@ -44,6 +47,15 @@ class ScheduleJournalModuleTest extends TestCase
             'academic_year_id' => $this->year->id,
             'name' => 'X-1',
         ]);
+        $this->teacher = $this->makeTeacher($this->guru, $this->subject);
+    }
+
+    private function makeTeacher(User $user, Subject $subject): Teacher
+    {
+        return Teacher::factory()->withUser($user)->create([
+            'tenant_id' => $this->tenant->id,
+            'subject_id' => $subject->id,
+        ]);
     }
 
     public function test_admin_can_create_schedule(): void
@@ -51,7 +63,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->year->id,
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 1,
@@ -62,17 +74,96 @@ class ScheduleJournalModuleTest extends TestCase
 
         $this->assertDatabaseHas('schedules', [
             'tenant_id' => $this->tenant->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
         ]);
+    }
+
+    public function test_admin_can_create_schedule_for_teacher_without_user_account(): void
+    {
+        $subject = Subject::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Fisika',
+        ]);
+        $teacher = Teacher::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => null,
+            'subject_id' => $subject->id,
+            'employment_status' => 'ptt',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('schedules.store'), [
+                'academic_year_id' => $this->year->id,
+                'teacher_id' => $teacher->id,
+                'subject_id' => $subject->id,
+                'rombel_id' => $this->rombel->id,
+                'day_of_week' => 4,
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+            ])
+            ->assertRedirect(route('schedules.index'));
+
+        $this->assertDatabaseHas('schedules', [
+            'teacher_id' => $teacher->id,
+            'user_id' => null,
+            'subject_id' => $subject->id,
+        ]);
+    }
+
+    public function test_schedule_create_lists_teachers_for_every_employment_status(): void
+    {
+        $statuses = ['asn', 'gty', 'ptt'];
+
+        foreach ($statuses as $status) {
+            $subject = Subject::factory()->create([
+                'tenant_id' => $this->tenant->id,
+                'name' => 'Mapel '.$status,
+            ]);
+            Teacher::factory()->create([
+                'tenant_id' => $this->tenant->id,
+                'name' => 'Guru '.$status,
+                'subject_id' => $subject->id,
+                'employment_status' => $status,
+            ]);
+        }
+
+        $this->actingAs($this->admin)
+            ->get(route('schedules.create'))
+            ->assertOk()
+            ->assertSee('Guru asn')
+            ->assertSee('Guru gty')
+            ->assertSee('Guru ptt');
+    }
+
+    public function test_schedule_rejects_subject_that_does_not_match_teacher_primary_subject(): void
+    {
+        $otherSubject = Subject::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Biologi',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('schedules.store'), [
+                'academic_year_id' => $this->year->id,
+                'teacher_id' => $this->teacher->id,
+                'subject_id' => $otherSubject->id,
+                'rombel_id' => $this->rombel->id,
+                'day_of_week' => 3,
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+            ])
+            ->assertSessionHasErrors('subject_id');
+
+        $this->assertDatabaseCount('schedules', 0);
     }
 
     public function test_admin_can_create_schedule_without_academic_year_field(): void
     {
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 2,
@@ -84,7 +175,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
         ]);
     }
 
@@ -94,7 +185,7 @@ class ScheduleJournalModuleTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 2,
@@ -109,7 +200,7 @@ class ScheduleJournalModuleTest extends TestCase
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 1,
@@ -120,7 +211,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->year->id,
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 1,
@@ -137,7 +228,7 @@ class ScheduleJournalModuleTest extends TestCase
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 1,
@@ -148,7 +239,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->year->id,
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 1,
@@ -161,11 +252,12 @@ class ScheduleJournalModuleTest extends TestCase
     public function test_schedule_conflict_for_same_rombel_detected(): void
     {
         $guruB = User::factory()->guru($this->tenant->id)->create();
+        $teacherB = $this->makeTeacher($guruB, $this->subject);
 
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 3,
@@ -176,7 +268,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->year->id,
-                'user_id' => $guruB->id,
+                'teacher_id' => $teacherB->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 3,
@@ -191,7 +283,7 @@ class ScheduleJournalModuleTest extends TestCase
         $schedule = Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 4,
@@ -202,7 +294,7 @@ class ScheduleJournalModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->put(route('schedules.update', $schedule), [
                 'academic_year_id' => $this->year->id,
-                'user_id' => $this->guru->id,
+                'teacher_id' => $this->teacher->id,
                 'subject_id' => $this->subject->id,
                 'rombel_id' => $this->rombel->id,
                 'day_of_week' => 4,
@@ -250,7 +342,7 @@ class ScheduleJournalModuleTest extends TestCase
         $schedule = Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 1,
@@ -328,10 +420,11 @@ class ScheduleJournalModuleTest extends TestCase
     public function test_guru_store_rejects_schedule_of_other_guru(): void
     {
         $guruB = User::factory()->guru($this->tenant->id)->create();
+        $teacherB = $this->makeTeacher($guruB, $this->subject);
         $scheduleB = Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $guruB->id,
+            'teacher_id' => $teacherB->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 2,
@@ -351,11 +444,12 @@ class ScheduleJournalModuleTest extends TestCase
     {
         $guruB = User::factory()->guru($this->tenant->id)->create();
         $subjectB = Subject::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Sejarah']);
+        $teacherB = $this->makeTeacher($guruB, $subjectB);
 
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 5,
@@ -363,7 +457,7 @@ class ScheduleJournalModuleTest extends TestCase
         Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $guruB->id,
+            'teacher_id' => $teacherB->id,
             'subject_id' => $subjectB->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 5,
@@ -381,7 +475,7 @@ class ScheduleJournalModuleTest extends TestCase
         $schedule = Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 1,
@@ -408,7 +502,7 @@ class ScheduleJournalModuleTest extends TestCase
         $schedule = Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $this->guru->id,
+            'teacher_id' => $this->teacher->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => 2,

@@ -20,6 +20,7 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
+        $teacherId = $user->teacher?->id;
 
         [$stats, $recentUsers] = match ($user->role) {
             'super_admin', 'admin_sekolah' => [$this->adminSekolahStats(), $this->recentTenantUsers()],
@@ -35,9 +36,9 @@ class DashboardController extends Controller
                 ->latest('time')
                 ->limit(8)
                 ->get(),
-            $user->isGuru() => Attendance::with(['student'])
+            $user->isGuru() && $teacherId => Attendance::with(['student'])
                 ->whereDate('date', now())
-                ->whereHas('student.rombel', fn ($q) => $q->where('homeroom_teacher_id', $user->id))
+                ->whereHas('student.rombel', fn ($q) => $q->where('homeroom_teacher_id', $teacherId))
                 ->latest('time')
                 ->limit(8)
                 ->get(),
@@ -59,8 +60,8 @@ class DashboardController extends Controller
             ->count();
         $teachingToday = Schedule::query()
             ->where('day_of_week', now()->dayOfWeekIso)
-            ->distinct('user_id')
-            ->count('user_id');
+            ->distinct('teacher_id')
+            ->count('teacher_id');
         $teachersTotal = Teacher::count();
         $studentsTotal = Student::count();
         $presentToday = (clone $today)->where('status', 'hadir')->distinct('student_id')->count('student_id');
@@ -122,6 +123,7 @@ class DashboardController extends Controller
     private function guruStats(): array
     {
         $userId = auth()->id();
+        $teacherId = auth()->user()->teacher?->id;
         $today = now()->toDateString();
 
         $todaySchedule = Schedule::with(['subject', 'rombel'])
@@ -134,9 +136,9 @@ class DashboardController extends Controller
         $totalJournals = (clone $myJournals)->count();
         $draftJournals = (clone $myJournals)->where('status', 'draft')->count();
 
-        $myStudents = Student::whereHas('rombel', function ($q) use ($userId) {
-            $q->where('homeroom_teacher_id', $userId);
-        })->count();
+        $myStudents = $teacherId
+            ? Student::whereHas('rombel', fn ($q) => $q->where('homeroom_teacher_id', $teacherId))->count()
+            : 0;
 
         return [
             'today_schedule' => $todaySchedule,

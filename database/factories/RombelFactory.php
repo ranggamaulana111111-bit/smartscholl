@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\AcademicYear;
 use App\Models\Rombel;
+use App\Models\Teacher;
 use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,7 +24,7 @@ class RombelFactory extends Factory
         ];
     }
 
-    public function homeroomTeacher(User $teacher): static
+    public function homeroomTeacher(Teacher $teacher): static
     {
         return $this->state(fn (): array => ['homeroom_teacher_id' => $teacher->id]);
     }

@@ -10,6 +10,7 @@ use App\Models\EarlyWarningLog;
 use App\Models\Rombel;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\EarlyWarningService;
@@ -136,7 +137,8 @@ class EarlyWarningServiceTest extends TestCase
     public function test_guru_ews_index_only_shows_homeroom_students(): void
     {
         $guru = User::factory()->guru($this->tenant->id)->create();
-        $this->rombel->update(['homeroom_teacher_id' => $guru->id]);
+        $teacher = Teacher::factory()->withUser($guru)->create(['tenant_id' => $this->tenant->id]);
+        $this->rombel->update(['homeroom_teacher_id' => $teacher->id]);
 
         EarlyWarningLog::create([
             'tenant_id' => $this->tenant->id,
@@ -147,11 +149,12 @@ class EarlyWarningServiceTest extends TestCase
         ]);
 
         $otherGuru = User::factory()->guru($this->tenant->id)->create();
+        $otherTeacher = Teacher::factory()->withUser($otherGuru)->create(['tenant_id' => $this->tenant->id]);
         $rombelB = Rombel::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
             'name' => 'X-2',
-            'homeroom_teacher_id' => $otherGuru->id,
+            'homeroom_teacher_id' => $otherTeacher->id,
         ]);
         $studentB = Student::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -172,7 +175,7 @@ class EarlyWarningServiceTest extends TestCase
         $logs = $response->viewData('logs');
 
         $this->assertNotEmpty($logs);
-        $this->assertTrue($logs->every(fn ($log) => $log->student->rombel->homeroom_teacher_id === $guru->id));
+        $this->assertTrue($logs->every(fn ($log) => $log->student->rombel->homeroom_teacher_id === $teacher->id));
     }
 
     private function seedAlphaStreak(): void

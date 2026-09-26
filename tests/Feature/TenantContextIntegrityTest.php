@@ -9,6 +9,7 @@ use App\Models\Rombel;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -30,6 +31,8 @@ class TenantContextIntegrityTest extends TestCase
     private User $guruA;
 
     private User $guruB;
+
+    private Teacher $teacherA;
 
     private AcademicYear $yearA;
 
@@ -58,6 +61,9 @@ class TenantContextIntegrityTest extends TestCase
         $this->adminB = User::factory()->adminSekolah($this->tenantB->id)->create();
         $this->guruA = User::factory()->guru($this->tenantA->id)->create();
         $this->guruB = User::factory()->guru($this->tenantB->id)->create();
+        $this->teacherA = Teacher::factory()->withUser($this->guruA)->create([
+            'tenant_id' => $this->tenantA->id,
+        ]);
 
         $this->yearA = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id, 'name' => '2026/2027']);
         $this->yearB = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantB->id, 'name' => '2026/2027']);
@@ -66,7 +72,7 @@ class TenantContextIntegrityTest extends TestCase
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $this->yearA->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $this->guruA->id,
+            'homeroom_teacher_id' => $this->teacherA->id,
         ]);
         $this->rombelB = Rombel::factory()->create([
             'tenant_id' => $this->tenantB->id,
@@ -91,17 +97,22 @@ class TenantContextIntegrityTest extends TestCase
 
     public function test_schedule_rejects_cross_tenant_references(): void
     {
+        $teacherB = Teacher::factory()->withUser($this->guruB)->create([
+            'tenant_id' => $this->tenantB->id,
+            'subject_id' => $this->subjectB->id,
+        ]);
+
         $this->actingAs($this->adminA)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->yearB->id,
-                'user_id' => $this->guruB->id,
+                'teacher_id' => $teacherB->id,
                 'subject_id' => $this->subjectB->id,
                 'rombel_id' => $this->rombelB->id,
                 'day_of_week' => 1,
                 'start_time' => '07:00',
                 'end_time' => '08:00',
             ])
-            ->assertSessionHasErrors(['academic_year_id', 'user_id', 'subject_id', 'rombel_id']);
+            ->assertSessionHasErrors(['academic_year_id', 'teacher_id', 'subject_id', 'rombel_id']);
 
         $this->assertDatabaseCount('schedules', 0);
     }
@@ -122,7 +133,7 @@ class TenantContextIntegrityTest extends TestCase
         $this->actingAs($this->adminA)
             ->post(route('schedules.store'), [
                 'academic_year_id' => $this->yearA->id,
-                'user_id' => $this->guruA->id,
+                'teacher_id' => $this->teacherA->id,
                 'subject_id' => $this->subjectA->id,
                 'rombel_id' => $foreignRombel->id,
                 'day_of_week' => 2,
@@ -333,9 +344,20 @@ class TenantContextIntegrityTest extends TestCase
 
     private function makeSchedule(string $tenantId, int $yearId, string $userId, int $rombelId, int $subjectId): Schedule
     {
+        $user = User::query()->findOrFail($userId);
+        $teacher = Teacher::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->first()
+            ?? Teacher::factory()->withUser($user)->create([
+                'tenant_id' => $tenantId,
+                'subject_id' => $subjectId,
+            ]);
+
         return Schedule::factory()->create([
             'tenant_id' => $tenantId,
             'academic_year_id' => $yearId,
+            'teacher_id' => $teacher->id,
             'user_id' => $userId,
             'subject_id' => $subjectId,
             'rombel_id' => $rombelId,

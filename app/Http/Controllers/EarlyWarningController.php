@@ -13,10 +13,13 @@ class EarlyWarningController extends Controller
     public function index(Request $request): View
     {
         $user = auth()->user();
+        $teacherId = $user->teacher?->id;
 
         $scope = fn ($query) => $query->when(
             $user->hasRole('guru'),
-            fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+            fn ($q) => $teacherId
+                ? $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $teacherId))
+                : $q->whereRaw('1 = 0')
         );
 
         $logs = $scope(EarlyWarningLog::with(['student.rombel', 'resolver'])->latest('trigger_date'));

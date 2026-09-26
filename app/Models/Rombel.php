@@ -27,7 +27,7 @@ class Rombel extends Model
 
     public function homeroomTeacher(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'homeroom_teacher_id');
+        return $this->belongsTo(Teacher::class, 'homeroom_teacher_id');
     }
 
     public function students(): HasMany

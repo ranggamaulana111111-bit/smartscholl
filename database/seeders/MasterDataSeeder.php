@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AcademicYear;
 use App\Models\Rombel;
 use App\Models\Student;
+use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
@@ -35,7 +36,7 @@ class MasterDataSeeder extends Seeder
         $rombelX1 = Rombel::create([
             'tenant_id' => $tenant->id,
             'academic_year_id' => $year->id,
-            'homeroom_teacher_id' => $guru?->id,
+            'homeroom_teacher_id' => null,
             'name' => 'X-1',
             'grade_level' => 'X',
         ]);
@@ -60,14 +61,38 @@ class MasterDataSeeder extends Seeder
             Student::create(array_merge($student, ['tenant_id' => $tenant->id]));
         }
 
+        $subjects = [
+            'Matematika' => Subject::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'name' => 'Matematika'],
+                ['code' => 'MTK', 'is_active' => true]
+            ),
+            'Bahasa Indonesia' => Subject::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'name' => 'Bahasa Indonesia'],
+                ['code' => 'BIN', 'is_active' => true]
+            ),
+            'Fisika' => Subject::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'name' => 'Fisika'],
+                ['code' => 'FIS', 'is_active' => true]
+            ),
+        ];
+
         $teachers = [
-            ['nuptk' => '7755766655110001', 'name' => 'Budi Hartawan, S.Pd.', 'subject' => 'Matematika', 'employment_status' => 'asn', 'user_id' => $guru?->id],
-            ['nuptk' => '7755766655110002', 'name' => 'Siti Rahayu, S.Pd.', 'subject' => 'Bahasa Indonesia', 'employment_status' => 'gty'],
-            ['nuptk' => '7755766655110003', 'name' => 'Agus Wijaya, M.Pd.', 'subject' => 'Fisika', 'employment_status' => 'ptt'],
+            ['nuptk' => '7755766655110001', 'name' => 'Budi Hartawan, S.Pd.', 'subject_id' => $subjects['Matematika']->id, 'subject_text' => 'Matematika', 'employment_status' => 'asn', 'user_id' => $guru?->id],
+            ['nuptk' => '7755766655110002', 'name' => 'Siti Rahayu, S.Pd.', 'subject_id' => $subjects['Bahasa Indonesia']->id, 'subject_text' => 'Bahasa Indonesia', 'employment_status' => 'gty'],
+            ['nuptk' => '7755766655110003', 'name' => 'Agus Wijaya, M.Pd.', 'subject_id' => $subjects['Fisika']->id, 'subject_text' => 'Fisika', 'employment_status' => 'ptt'],
         ];
 
         foreach ($teachers as $teacher) {
             Teacher::create(array_merge($teacher, ['tenant_id' => $tenant->id]));
+        }
+
+        if ($guru) {
+            $rombelX1->update([
+                'homeroom_teacher_id' => Teacher::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('user_id', $guru->id)
+                    ->value('id'),
+            ]);
         }
     }
 }

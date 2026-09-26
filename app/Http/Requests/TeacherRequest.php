@@ -26,10 +26,11 @@ class TeacherRequest extends FormRequest
             'nip' => ['nullable', 'max:18'],
             'name' => ['required', 'string', 'max:255'],
             'subject_id' => [
-                'nullable',
+                'required',
                 'integer',
                 Rule::exists('subjects', 'id')->where(
-                    fn ($q) => $q->when($tenantId, fn ($scoped) => $scoped->where('tenant_id', $tenantId))
+                    fn ($q) => $q->where('is_active', true)
+                        ->when($tenantId, fn ($scoped) => $scoped->where('tenant_id', $tenantId))
                 ),
             ],
             'subject_text' => ['nullable', 'string', 'max:100'],
@@ -45,6 +46,8 @@ class TeacherRequest extends FormRequest
             'nuptk.digits' => 'NUPTK harus 16 digit angka.',
             'nuptk.unique' => 'NUPTK sudah terdaftar.',
             'name.required' => 'Nama guru wajib diisi.',
+            'subject_id.required' => 'Mata pelajaran utama wajib dipilih.',
+            'subject_id.exists' => 'Mata pelajaran aktif tidak ditemukan pada sekolah ini.',
             'employment_status.in' => 'Status kepegawaian tidak valid.',
         ];
     }

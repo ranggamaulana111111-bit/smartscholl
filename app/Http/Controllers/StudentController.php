@@ -299,7 +299,8 @@ class StudentController extends Controller
 
         if ($user->hasRole('guru')) {
             abort_unless(
-                $student->rombel?->homeroom_teacher_id === $user->id,
+                $user->teacher?->id
+                    && (int) $student->rombel?->homeroom_teacher_id === $user->teacher->id,
                 403,
                 'Anda hanya dapat mengakses data siswa di rombel binaan Anda.'
             );

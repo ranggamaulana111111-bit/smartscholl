@@ -30,6 +30,8 @@ class BusinessCorrectnessTest extends TestCase
 
     private User $guru;
 
+    private Teacher $teacher;
+
     private AcademicYear $year;
 
     private Rombel $rombel;
@@ -45,6 +47,7 @@ class BusinessCorrectnessTest extends TestCase
         $this->tenant = Tenant::factory()->create(['domain' => 'p1.smartschool.id']);
         $this->admin = User::factory()->adminSekolah($this->tenant->id)->create();
         $this->guru = User::factory()->guru($this->tenant->id)->create();
+        $this->teacher = Teacher::factory()->withUser($this->guru)->create(['tenant_id' => $this->tenant->id]);
 
         $this->year = AcademicYear::factory()->active()->create([
             'tenant_id' => $this->tenant->id,
@@ -56,7 +59,7 @@ class BusinessCorrectnessTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $this->guru->id,
+            'homeroom_teacher_id' => $this->teacher->id,
         ]);
 
         $this->subject = Subject::factory()->create([
@@ -64,6 +67,8 @@ class BusinessCorrectnessTest extends TestCase
             'name' => 'Matematika',
             'code' => 'MTK',
         ]);
+
+        $this->teacher->update(['subject_id' => $this->subject->id]);
 
         $this->student = Student::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -304,26 +309,33 @@ class BusinessCorrectnessTest extends TestCase
 
     public function test_teacher_with_schedule_cannot_be_deleted(): void
     {
-        $teacher = Teacher::factory()->withUser($this->guru)->create(['tenant_id' => $this->tenant->id]);
-        $this->makeSchedule(1, $this->guru->id);
+        Schedule::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'academic_year_id' => $this->year->id,
+            'teacher_id' => $this->teacher->id,
+            'user_id' => $this->guru->id,
+            'subject_id' => $this->subject->id,
+            'rombel_id' => $this->rombel->id,
+            'day_of_week' => 1,
+            'start_time' => '07:00:00',
+            'end_time' => '08:00:00',
+        ]);
 
         $this->actingAs($this->admin)
-            ->delete(route('teachers.destroy', $teacher))
+            ->delete(route('teachers.destroy', $this->teacher))
             ->assertSessionHasErrors();
 
-        $this->assertDatabaseHas('teachers', ['id' => $teacher->id]);
+        $this->assertDatabaseHas('teachers', ['id' => $this->teacher->id]);
     }
 
     public function test_teacher_without_schedule_can_be_deleted(): void
     {
-        $teacher = Teacher::factory()->withUser($this->guru)->create(['tenant_id' => $this->tenant->id]);
-
         $this->actingAs($this->admin)
-            ->delete(route('teachers.destroy', $teacher))
+            ->delete(route('teachers.destroy', $this->teacher))
             ->assertRedirect(route('teachers.index'))
             ->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('teachers', ['id' => $teacher->id]);
+        $this->assertDatabaseMissing('teachers', ['id' => $this->teacher->id]);
     }
 
     public function test_user_with_schedule_is_protected_by_foreign_key(): void
@@ -484,10 +496,21 @@ class BusinessCorrectnessTest extends TestCase
 
     private function makeSchedule(int $isoWeekday, ?int $userId = null): Schedule
     {
+        $user = $userId ? User::query()->findOrFail($userId) : $this->guru;
+        $teacher = Teacher::query()
+            ->where('tenant_id', $this->tenant->id)
+            ->where('user_id', $user->id)
+            ->first()
+            ?? Teacher::factory()->withUser($user)->create([
+                'tenant_id' => $this->tenant->id,
+                'subject_id' => $this->subject->id,
+            ]);
+
         return Schedule::factory()->create([
             'tenant_id' => $this->tenant->id,
             'academic_year_id' => $this->year->id,
-            'user_id' => $userId ?? $this->guru->id,
+            'teacher_id' => $teacher->id,
+            'user_id' => $user->id,
             'subject_id' => $this->subject->id,
             'rombel_id' => $this->rombel->id,
             'day_of_week' => $isoWeekday,

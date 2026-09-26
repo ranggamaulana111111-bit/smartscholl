@@ -25,10 +25,13 @@ class AttendanceController extends Controller
     {
         $date = $request->input('date') ?: now()->toDateString();
         $user = auth()->user();
+        $teacherId = $user->teacher?->id;
 
         $scopeStudent = fn ($query) => $query->when(
             $user->hasRole('guru'),
-            fn ($q) => $q->whereHas('rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+            fn ($q) => $q->whereHas('rombel', fn ($rq) => $teacherId
+                ? $rq->where('homeroom_teacher_id', $teacherId)
+                : $rq->whereRaw('1 = 0'))
         );
 
         $totalStudents = $scopeStudent(Student::query())->count();
@@ -36,7 +39,9 @@ class AttendanceController extends Controller
         $byStatus = Attendance::whereDate('date', $date)
             ->when(
                 $user->hasRole('guru'),
-                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $teacherId
+                    ? $rq->where('homeroom_teacher_id', $teacherId)
+                    : $rq->whereRaw('1 = 0'))
             )
             ->get()
             ->groupBy('type')
@@ -53,7 +58,9 @@ class AttendanceController extends Controller
             ->whereDate('date', $date)
             ->when(
                 $user->hasRole('guru'),
-                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $rq->where('homeroom_teacher_id', $user->id))
+                fn ($q) => $q->whereHas('student.rombel', fn ($rq) => $teacherId
+                    ? $rq->where('homeroom_teacher_id', $teacherId)
+                    : $rq->whereRaw('1 = 0'))
             )
             ->latest('time')
             ->paginate(20)
@@ -476,7 +483,9 @@ class AttendanceController extends Controller
         }
 
         abort_unless(
-            $user->hasRole('guru') && $student->rombel?->homeroom_teacher_id === $user->id,
+            $user->hasRole('guru')
+                && $user->teacher?->id
+                && (int) $student->rombel?->homeroom_teacher_id === $user->teacher->id,
             403,
             'Anda hanya dapat mengisi absen siswa di rombel binaan Anda.'
         );

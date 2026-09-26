@@ -8,6 +8,7 @@ use App\Models\Rombel;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
@@ -161,13 +162,14 @@ class AttendanceTest extends TestCase
     public function test_guru_can_manual_record_only_homeroom_students(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
         $homeroom = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
         $outside = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
@@ -370,6 +372,7 @@ class AttendanceTest extends TestCase
     public function test_lesson_scan_requires_own_schedule_for_guru(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $otherGuru = User::factory()->guru($this->tenantA->id)->create();
 
         $own = $this->makeSchedule($this->tenantA->id, null, $guru->id, $this->studentA->rombel_id, now()->toDateString());
@@ -402,6 +405,7 @@ class AttendanceTest extends TestCase
         $rombelLain = Rombel::factory()->create(['tenant_id' => $this->tenantA->id, 'academic_year_id' => $year->id]);
         Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $rombelLain->id, 'nisn' => '0039123457']);
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
 
         $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $guru->id, $rombelLain->id, now()->toDateString());
 
@@ -531,6 +535,7 @@ class AttendanceTest extends TestCase
     public function test_manual_lesson_rejects_day_mismatch_with_schedule(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $schedule = $this->makeSchedule($this->tenantA->id, null, $guru->id, $this->studentA->rombel_id, now()->toDateString());
 
         $wrongDay = Carbon::parse(now()->toDateString())->addDay()->toDateString();
@@ -551,13 +556,14 @@ class AttendanceTest extends TestCase
     public function test_guru_can_open_manual_schedule_page_for_own_rombel_only(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
         $homeroom = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
 
         $studentA = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $homeroom->id, 'nisn' => '0039123403', 'name' => 'Siswa Binaan']);
@@ -575,6 +581,7 @@ class AttendanceTest extends TestCase
     public function test_guru_cannot_open_manual_schedule_page_for_other_teachers_schedule(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $otherGuru = User::factory()->guru($this->tenantA->id)->create();
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
@@ -582,7 +589,7 @@ class AttendanceTest extends TestCase
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-2',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
 
         $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $otherGuru->id, $rombel->id, now()->toDateString());
@@ -595,13 +602,14 @@ class AttendanceTest extends TestCase
     public function test_guru_can_open_manual_meetings_for_own_schedule(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
         $homeroom = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
 
         $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $guru->id, $homeroom->id, '2026-09-03');
@@ -616,13 +624,14 @@ class AttendanceTest extends TestCase
     public function test_manual_meetings_show_filled_count(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
         $homeroom = Rombel::factory()->create([
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-1',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
 
         $student = Student::factory()->create(['tenant_id' => $this->tenantA->id, 'rombel_id' => $homeroom->id, 'nisn' => '0039123410']);
@@ -648,6 +657,7 @@ class AttendanceTest extends TestCase
     public function test_guru_cannot_open_manual_meetings_for_other_teachers_schedule(): void
     {
         $guru = User::factory()->guru($this->tenantA->id)->create();
+        $teacher = $this->teacherFor($guru);
         $otherGuru = User::factory()->guru($this->tenantA->id)->create();
         $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
 
@@ -655,7 +665,7 @@ class AttendanceTest extends TestCase
             'tenant_id' => $this->tenantA->id,
             'academic_year_id' => $year->id,
             'name' => 'X-2',
-            'homeroom_teacher_id' => $guru->id,
+            'homeroom_teacher_id' => $teacher->id,
         ]);
 
         $schedule = $this->makeSchedule($this->tenantA->id, $year->id, $otherGuru->id, $rombel->id, '2026-09-03');
@@ -665,14 +675,29 @@ class AttendanceTest extends TestCase
             ->assertForbidden();
     }
 
+    private function teacherFor(User $user): Teacher
+    {
+        return Teacher::factory()->withUser($user)->create(['tenant_id' => $user->tenant_id]);
+    }
+
     private function makeSchedule(string $tenantId, ?int $yearId, ?int $userId, int $rombelId, string $date, ?string $start = null, ?string $end = null): Schedule
     {
         $subject = Subject::factory()->create(['tenant_id' => $tenantId, 'name' => 'Mapel '.fake()->unique()->bothify('##')]);
+        $user = $userId ? User::query()->findOrFail($userId) : User::factory()->guru($tenantId)->create();
+        $teacher = Teacher::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $user->id)
+            ->first()
+            ?? Teacher::factory()->withUser($user)->create([
+                'tenant_id' => $tenantId,
+                'subject_id' => $subject->id,
+            ]);
 
         return Schedule::factory()->create([
             'tenant_id' => $tenantId,
             'academic_year_id' => $yearId ?? AcademicYear::where('is_active', true)->value('id'),
-            'user_id' => $userId ?? User::factory()->guru($tenantId)->create()->id,
+            'teacher_id' => $teacher->id,
+            'user_id' => $user->id,
             'subject_id' => $subject->id,
             'rombel_id' => $rombelId,
             'day_of_week' => (int) Carbon::parse($date)->isoWeekday(),
