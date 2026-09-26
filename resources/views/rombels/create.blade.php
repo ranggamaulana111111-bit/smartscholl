@@ -54,7 +54,7 @@
         <select id="homeroom_teacher_id" name="homeroom_teacher_id" class="input @error('homeroom_teacher_id') border-danger @enderror" @error('homeroom_teacher_id') aria-invalid="true" @enderror>
             <option value="">-- Pilih --</option>
             @foreach($teachers as $teacher)
-                <option value="{{ $teacher->id }}" @selected(old('homeroom_teacher_id') == $teacher->id)>{{ $teacher->name }}</option>
+                <option value="{{ $teacher->id }}" @selected(old('homeroom_teacher_id') == $teacher->id)>{{ $teacher->name }}@if($teacher->subject) ({{ $teacher->subject->name }})@endif</option>
             @endforeach
         </select>
         @error('homeroom_teacher_id')

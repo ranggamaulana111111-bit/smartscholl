@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detail '.$teacher->name)
 @section('content')
@@ -49,7 +49,7 @@
             Belum ada jadwal mengajar untuk guru ini.
         </div>
     @else
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>

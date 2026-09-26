@@ -2,11 +2,12 @@
 
 @section('title', 'Detail Jurnal KBM')
 @section('content')
-<div class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-text">Detail Jurnal KBM</h1>
-</div>
-<div class="card max-w-2xl p-6 space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+<x-page-head title="Detail Jurnal KBM"
+    description="Ringkasan catatan kegiatan belajar mengajar."
+    eyebrow="Dokumentasi">
+</x-page-head>
+<div class="panel max-w-2xl p-6 space-y-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <p class="text-xs text-text-muted uppercase tracking-wide">Tanggal</p>
             <p class="mt-1 text-sm font-medium text-text">{{ $journal->date?->translatedFormat('d M Y') }}</p>
@@ -15,6 +16,7 @@
             <p class="text-xs text-text-muted uppercase tracking-wide">Status</p>
             <p class="mt-1">
                 <span class="badge {{ $journal->status === 'closed' ? 'badge-success' : 'badge-warning' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true"></span>
                     {{ $journal->status === 'closed' ? 'Selesai' : 'Draft' }}
                 </span>
             </p>

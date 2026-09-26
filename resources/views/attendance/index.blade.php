@@ -1,91 +1,100 @@
 @extends('layouts.app')
 
-@section('title', 'Absensi')
+@section('title', 'Riwayat Absensi')
 @section('content')
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="font-display text-2xl font-semibold text-text">Riwayat Absensi</h1>
-        <p class="text-sm text-text-muted/70 mt-1">Rekap kehadiran siswa per hari.</p>
-    </div>
-    <div class="flex items-center gap-3 shrink-0">
-        <a href="{{ route('attendance.scan') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-on-primary text-sm font-medium rounded-md hover:bg-primary-hover transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<x-page-head title="Riwayat Absensi"
+    description="Rekap kehadiran siswa per hari."
+    eyebrow="Absensi">
+    <x-slot name="actions">
+        <a href="{{ route('attendance.scan') }}" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
-            Buka Mode Scan
+            Mode Scan
         </a>
-        <a href="{{ route('attendance.manual') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border text-text text-sm font-medium rounded-md hover:bg-surface transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            Absensi Manual
-        </a>
-    </div>
-</div>
+        <a href="{{ route('attendance.manual') }}" class="btn btn-ghost">Absensi Manual</a>
+    </x-slot>
+</x-page-head>
 
-<form method="GET" action="{{ route('attendance.index') }}" class="mb-6 max-w-xs bg-white border border-border rounded-md p-4 flex items-center gap-3">
-    <label for="date" class="text-sm font-medium text-text shrink-0">Tanggal</label>
-    <input type="date" id="date" name="date" value="{{ $date }}" class="w-full px-3 py-2 rounded-md border border-border bg-white text-text text-sm focus:border-accent outline-none">
-    <button type="submit" class="px-4 py-2 bg-primary text-on-primary text-sm font-medium rounded-md hover:bg-primary-hover transition-colors shrink-0">Tampilkan</button>
+<form method="GET" action="{{ route('attendance.index') }}" class="mb-6 max-w-md bg-white border border-border rounded-md p-4 flex items-end gap-3">
+    <div class="flex-1">
+        <label for="date" class="label">Tanggal</label>
+        <input type="date" id="date" name="date" value="{{ $date }}" class="input">
+    </div>
+    <button type="submit" class="btn btn-primary shrink-0">Tampilkan</button>
 </form>
 
 @php
-    $statusLabels = ['hadir' => 'Hadir', 'sakit' => 'Sakit', 'izin' => 'Izin', 'alpha' => 'Alpha'];
+    $statusBadge = [
+        'hadir' => 'badge-success',
+        'sakit' => 'badge-warning',
+        'izin' => '',
+        'alpha' => 'badge-danger',
+    ];
     $typeLabels = ['gate_in' => 'Masuk', 'gate_out' => 'Pulang', 'lesson' => 'Pelajaran'];
 @endphp
 
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+<div class="bento mb-6">
     @foreach(['gate_in' => 'Masuk Gerbang', 'gate_out' => 'Pulang Gerbang', 'lesson' => 'Hadir Pelajaran'] as $type => $title)
-        <div class="bg-white border border-border rounded-md p-5">
-            <p class="text-sm font-medium text-text">{{ $title }}</p>
-            @if(isset($byStatus[$type]))
-                <div class="mt-3 space-y-1 text-sm text-text-muted">
-                    <div class="flex justify-between"><span>Hadir</span><span class="font-medium">{{ $byStatus[$type]['hadir'] }}</span></div>
-                    <div class="flex justify-between"><span>Sakit</span><span class="font-medium">{{ $byStatus[$type]['sakit'] }}</span></div>
-                    <div class="flex justify-between"><span>Izin</span><span class="font-medium">{{ $byStatus[$type]['izin'] }}</span></div>
-                    <div class="flex justify-between"><span>Alpha</span><span class="font-medium">{{ $byStatus[$type]['alpha'] }}</span></div>
-                </div>
-            @else
-                <p class="mt-3 text-sm text-text-muted/60">Belum ada data.</p>
-            @endif
+        <div class="bento-card lg:col-span-4">
+            <div class="bento-card__header">
+                <p class="bento-card__title">{{ $title }}</p>
+            </div>
+            <div class="bento-card__body pt-4">
+                @if(isset($byStatus[$type]))
+                    <dl class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center gap-4 border-b border-border pb-2"><dt class="text-text-muted">Hadir</dt><dd class="font-semibold text-success">{{ $byStatus[$type]['hadir'] }}</dd></div>
+                        <div class="flex justify-between items-center gap-4 border-b border-border pb-2"><dt class="text-text-muted">Sakit</dt><dd class="font-semibold text-warning">{{ $byStatus[$type]['sakit'] }}</dd></div>
+                        <div class="flex justify-between items-center gap-4 border-b border-border pb-2"><dt class="text-text-muted">Izin</dt><dd class="font-semibold text-text">{{ $byStatus[$type]['izin'] }}</dd></div>
+                        <div class="flex justify-between items-center gap-4"><dt class="text-text-muted">Alpha</dt><dd class="font-semibold text-danger">{{ $byStatus[$type]['alpha'] }}</dd></div>
+                    </dl>
+                @else
+                    <p class="text-sm text-text-muted">Belum ada data.</p>
+                @endif
+            </div>
         </div>
     @endforeach
 </div>
 
 @if($attendances->isEmpty())
-    <div class="p-12 bg-white border border-border rounded-md text-center">
-        <p class="text-text-muted/70">Belum ada riwayat absensi untuk tanggal ini.</p>
+    <div class="panel p-12 text-center">
+        <span class="empty-state__icon" aria-hidden="true">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
+        </span>
+        <p class="empty-state__title">Belum ada riwayat absensi</p>
+        <p class="empty-state__hint">Tidak ada pencatatan kehadiran untuk tanggal yang dipilih.</p>
     </div>
 @else
-    <div class="bg-white border border-border rounded-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+    <div class="panel overflow-hidden">
+        <div class="table-wrap">
+            <table class="table">
                 <thead>
-                    <tr class="bg-surface text-left text-text border-b border-border">
-                        <th class="px-4 py-3 font-medium">Waktu</th>
-                        <th class="px-4 py-3 font-medium">Siswa</th>
-                        <th class="px-4 py-3 font-medium">Rombel</th>
-                        <th class="px-4 py-3 font-medium">Jenis</th>
-                        <th class="px-4 py-3 font-medium">Status</th>
-                        <th class="px-4 py-3 font-medium">Sumber</th>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Siswa</th>
+                        <th>Rombel</th>
+                        <th>Jenis</th>
+                        <th>Status</th>
+                        <th>Sumber</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
+                <tbody>
                     @foreach($attendances as $attendance)
-                        <tr class="hover:bg-surface/50 transition-colors">
-                            <td class="px-4 py-3 text-text-muted">{{ $attendance->time }}</td>
-                            <td class="px-4 py-3 font-medium">
-                                {{ $attendance->student?->name ?? '-' }}
-                                <span class="block text-xs font-normal text-text-muted/70 mt-0.5">{{ $attendance->student?->nisn ?? '' }}</span>
+                        <tr>
+                            <td class="text-text-muted">{{ $attendance->time }}</td>
+                            <td>
+                                <span class="font-medium text-text">{{ $attendance->student?->name ?? '-' }}</span>
+                                <span class="block text-xs font-normal text-text-muted">{{ $attendance->student?->nisn ?? '' }}</span>
                             </td>
-                            <td class="px-4 py-3 text-text-muted">{{ $attendance->student?->rombel?->name ?? '-' }}</td>
-                            <td class="px-4 py-3 text-text-muted">{{ $typeLabels[$attendance->type] ?? $attendance->type }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2 py-1 rounded bg-surface text-text text-xs font-medium">
+                            <td class="text-text-muted">{{ $attendance->student?->rombel?->name ?? '-' }}</td>
+                            <td class="text-text-muted">{{ $typeLabels[$attendance->type] ?? $attendance->type }}</td>
+                            <td>
+                                <span class="badge {{ $statusBadge[$attendance->status] ?? '' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true"></span>
                                     {{ $statusLabels[$attendance->status] ?? $attendance->status }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-text-muted">{{ $attendance->source === 'scan' ? 'Scan' : 'Manual' }}</td>
+                            <td class="text-text-muted">{{ $attendance->source === 'scan' ? 'Scan' : 'Manual' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

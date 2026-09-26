@@ -2,12 +2,16 @@
 
 @section('title', 'Detail '.$student->name)
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('students.index') }}" class="text-sm text-text-muted hover:text-accent transition-colors">&larr; Kembali</a>
-    <h1 class="font-display text-2xl font-semibold text-text mt-2">Detail Siswa</h1>
-</div>
+<x-page-head title="Detail Siswa"
+    description="{{ $student->name }} &middot; NISN {{ $student->nisn }}"
+    eyebrow="Kesiswaan">
+    <x-slot name="actions">
+        <a href="{{ route('students.progress', $student) }}" class="btn btn-accent">Monitor Perkembangan</a>
+        <a href="{{ route('students.rapor', $student) }}" class="btn btn-primary" target="_blank">Cetak Rapor</a>
+    </x-slot>
+</x-page-head>
 
-<div class="card p-6 mb-6">
+<div class="panel p-6 mb-6">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
             <p class="text-xs text-text-muted uppercase">NISN</p>
@@ -75,29 +79,30 @@
         </div>
         <div>
             <p class="text-xs text-text-muted uppercase">Kartu QR</p>
-            <p class="mt-1"><a href="{{ route('attendance.qrcode', $student) }}" target="_blank" class="text-sm text-accent hover:underline">Lihat / cetak QR</a></p>
+            <p class="mt-1"><a href="{{ route('attendance.qrcode', $student) }}" target="_blank" class="link">Lihat / cetak QR</a></p>
         </div>
     </div>
 </div>
 
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    @php $alphaWarning = ($attendance['alpha'] ?? 0) > 3; @endphp
     @foreach(['hadir' => 'Hadir', 'sakit' => 'Sakit', 'izin' => 'Izin', 'alpha' => 'Alpha', 'total' => 'Total Presensi'] as $key => $label)
-        <div class="card p-5 text-center">
+        <div class="bento-card bento-card--surface p-5 text-center">
             <p class="text-xs text-text-muted uppercase">{{ $label }}</p>
-            <p class="mt-1 font-display text-2xl font-semibold {{ $key === 'alpha' && ($attendance[$key] ?? 0) > 3 ? 'text-danger' : 'text-text' }}">{{ $attendance[$key] ?? 0 }}</p>
+            <p class="mt-1 font-display text-2xl font-semibold {{ $key === 'alpha' && $alphaWarning ? 'text-danger' : 'text-text' }}">{{ $attendance[$key] ?? 0 }}</p>
         </div>
     @endforeach
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="card overflow-hidden">
+    <div class="panel overflow-hidden">
         <div class="px-4 py-3 bg-surface border-b border-border">
             <h2 class="text-sm font-medium text-text">Presensi Terbaru</h2>
         </div>
         @if($recentAttendance->isEmpty())
             <div class="px-4 py-8 text-center text-sm text-text-muted">Belum ada presensi tercatat.</div>
         @else
-            <div class="overflow-x-auto">
+            <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
@@ -115,7 +120,7 @@
                                 <td>
                                     <span class="badge">{{ match($a->type) { 'gate_in' => 'Masuk', 'gate_out' => 'Pulang', 'lesson' => 'Pelajaran', default => '-' } }}</span>
                                 </td>
-                                <td>{{ ucfirst($a->status) }}</td>
+                                <td class="font-medium text-text">{{ ucfirst($a->status) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -124,14 +129,14 @@
         @endif
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="panel overflow-hidden">
         <div class="px-4 py-3 bg-surface border-b border-border">
             <h2 class="text-sm font-medium text-text">Ringkasan Nilai per Mapel</h2>
         </div>
         @if($bySubject->isEmpty())
             <div class="px-4 py-8 text-center text-sm text-text-muted">Belum ada nilai tercatat.</div>
         @else
-            <div class="overflow-x-auto">
+            <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
@@ -154,11 +159,11 @@
 </div>
 
 @if($student->rombelHistories->isNotEmpty())
-    <div class="card overflow-hidden mt-6">
+    <div class="panel overflow-hidden mt-6">
         <div class="px-4 py-3 bg-surface border-b border-border">
             <h2 class="text-sm font-medium text-text">Riwayat Rombel</h2>
         </div>
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -176,7 +181,7 @@
                             <td>{{ $history->left_at?->translatedFormat('d M Y') ?? '-' }}</td>
                             <td>
                                 @if($history->left_at)
-                                    <span class="badge badge-muted">Pernah</span>
+                                    <span class="badge">Pernah</span>
                                 @else
                                     <span class="badge badge-success">Aktif</span>
                                 @endif

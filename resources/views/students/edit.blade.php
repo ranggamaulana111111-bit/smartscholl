@@ -109,8 +109,7 @@
     <div class="flex items-center gap-3 pt-2 border-t border-border">
         <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
         <a href="{{ route('students.index') }}" class="btn btn-ghost">Batal</a>
-        <form method="POST" action="{{ route('students.regenerate-qr', $student) }}" class="ml-auto"
-            onsubmit="return confirm('Buat ulang token QR? Kartu QR lama tidak akan berlaku lagi.')">
+        <form method="POST" action="{{ route('students.regenerate-qr', $student) }}" class="ml-auto" data-confirm="Buat ulang token QR? Kartu QR lama tidak akan berlaku lagi.">
             @csrf
             <button type="submit" class="link text-sm">Regenerate token QR</button>
         </form>

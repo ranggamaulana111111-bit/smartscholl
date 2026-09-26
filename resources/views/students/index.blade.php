@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Manajemen Siswa')
 @section('content')
@@ -21,7 +21,7 @@
     </x-panel>
 @else
     <x-panel class="overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -55,7 +55,7 @@
                                     <a href="{{ route('students.progress', $student) }}" class="link">Monitor</a>
                                     <a href="{{ route('students.rapor', $student) }}" class="link" target="_blank">Rapor</a>
                                     <a href="{{ route('students.edit', $student) }}" class="link">Edit</a>
-                                    <form method="POST" action="{{ route('students.destroy', $student) }}" class="inline" onsubmit="return confirm('Hapus siswa ini?');">
+                                    <form method="POST" action="{{ route('students.destroy', $student) }}" class="inline" data-confirm="Hapus siswa ini?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="link link-danger">Hapus</button>

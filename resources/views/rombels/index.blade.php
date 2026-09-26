@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Manajemen Rombel')
 @section('content')
@@ -21,7 +21,7 @@
     </x-panel>
 @else
     <x-panel class="overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -49,7 +49,7 @@
                                 <div class="inline-flex items-center gap-4">
                                     <a href="{{ route('rombels.show', $rombel) }}" class="link">Detail</a>
                                     <a href="{{ route('rombels.edit', $rombel) }}" class="link">Edit</a>
-                                    <form method="POST" action="{{ route('rombels.destroy', $rombel) }}" class="inline" onsubmit="return confirm('Hapus rombel ini?');">
+                                    <form method="POST" action="{{ route('rombels.destroy', $rombel) }}" class="inline" data-confirm="Hapus rombel ini?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="link link-danger">Hapus</button>

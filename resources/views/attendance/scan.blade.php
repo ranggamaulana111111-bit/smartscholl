@@ -3,46 +3,31 @@
 @section('title', 'Mode Scan Absensi')
 @section('content')
 <div class="max-w-2xl mx-auto">
-    <div class="mb-6 text-center">
-        <h1 class="font-display text-2xl font-semibold text-text">Mode Scan Absensi</h1>
-        <p class="text-sm text-text-muted/70 mt-1">Scan QR atau tap kartu siswa. Scanner USB berfungsi seperti keyboard, cukup arahkan lalu tekan Enter.</p>
-    </div>
+    <x-page-head title="Mode Scan Absensi"
+        description="Scan QR atau tap kartu siswa. Scanner USB berfungsi seperti keyboard, cukup arahkan lalu tekan Enter."
+        eyebrow="Scan">
+    </x-page-head>
 
-    <div class="bg-white border border-border rounded-md p-5">
-        <div class="flex gap-2 mb-5">
+    <div class="panel p-5">
+        <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Mode scan">
             @foreach(['gate_in' => 'Masuk Gerbang', 'gate_out' => 'Pulang Gerbang', 'lesson' => 'Hadir Pelajaran'] as $value => $label)
                 <a href="{{ route('attendance.scan', ['mode' => $value]) }}"
-                    class="px-3 py-2 rounded-md text-sm font-medium {{ $mode === $value ? 'bg-primary text-on-primary' : 'bg-surface text-text hover:bg-surface' }} transition-colors">
+                    role="tab"
+                    aria-selected="{{ $mode === $value ? 'true' : 'false' }}"
+                    class="btn {{ $mode === $value ? 'btn-primary' : 'btn-ghost' }}">
                     {{ $label }}
                 </a>
             @endforeach
         </div>
 
-        @if(session('success'))
-            <div class="mb-5 p-4 bg-surface border border-border rounded-md text-sm text-text font-medium" role="status">
-                {{ session('success') }}
-            </div>
-        @elseif(session('info'))
-            <div class="mb-5 p-4 bg-surface border border-border rounded-md text-sm text-text" role="status">
-                {{ session('info') }}
-            </div>
-        @elseif(session('error'))
-            <div class="mb-5 p-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-700" role="alert">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('attendance.record') }}" id="scan-form" autocomplete="off">
+        <form method="POST" action="{{ route('attendance.record') }}" id="scan-form" class="space-y-4" autocomplete="off">
             @csrf
             <input type="hidden" name="mode" value="{{ $mode }}">
 
             @if($mode === 'lesson')
-                <div class="mb-5">
-                    <label for="schedule_id" class="block text-sm font-medium text-text mb-1">
-                        Jadwal Pelajaran <span class="text-danger">*</span>
-                    </label>
-                    <select name="schedule_id" id="schedule_id" required
-                        class="w-full px-3 py-2 rounded-md border border-border bg-white text-text text-sm focus:border-accent outline-none">
+                <div>
+                    <label for="schedule_id" class="label">Jadwal Pelajaran <span class="text-danger">*</span></label>
+                    <select name="schedule_id" id="schedule_id" required class="input">
                         <option value="">-- Pilih jadwal --</option>
                         @foreach($schedules as $sched)
                             <option value="{{ $sched->id }}">
@@ -51,45 +36,38 @@
                         @endforeach
                     </select>
                     @if($schedules->isEmpty())
-                        <p class="mt-1 text-xs text-red-600">Tidak ada jadwal pelajaran hari ini. Hadir pelajaran tidak dapat dicatat.</p>
+                        <p class="error-text">Tidak ada jadwal pelajaran hari ini. Hadir pelajaran tidak dapat dicatat.</p>
                     @endif
                 </div>
             @endif
 
-            <label for="payload" class="block text-sm font-medium text-text mb-1">
-                Kode QR / Kartu RFID <span class="text-text-muted/60">(scan QR atau tap kartu)</span>
-            </label>
-            <input
-                type="text"
-                id="payload"
-                name="payload"
-                class="w-full px-4 py-3 rounded-md border border-border bg-white text-text text-lg tracking-widest text-center focus:border-accent outline-none"
-                placeholder="SS:..."
-                autofocus
-                enterkeyhint="go"
-            >
+            <div>
+                <label for="payload" class="label">Kode QR / Kartu RFID</label>
+                <input type="text" id="payload" name="payload"
+                    class="input font-mono text-center text-lg tracking-widest"
+                    placeholder="SS:..."
+                    autofocus
+                    enterkeyhint="go"
+                    aria-describedby="payload-hint">
+                <p id="payload-hint" class="text-xs text-text-muted mt-1">Kode unik siswa. Scanner USB membacanya otomatis.</p>
+            </div>
 
-            <button type="submit" class="w-full mt-4 px-4 py-3 bg-primary text-on-primary text-sm font-medium rounded-md hover:bg-primary-hover transition-colors">
-                Catat Absensi
-            </button>
+            <button type="submit" class="btn btn-primary w-full py-3">Catat Absensi</button>
         </form>
     </div>
 
-    <div class="mt-4 bg-white border border-border rounded-md p-5">
+    <div class="mt-4 panel p-5">
         <h2 class="text-sm font-semibold text-text">Scan Massal</h2>
-        <p class="text-xs text-text-muted/70 mt-1">Tempel beberapa kode sekaligus. Satu kode per baris, atau pisahkan dengan koma.</p>
+        <p class="text-xs text-text-muted mt-1">Tempel beberapa kode sekaligus. Satu kode per baris, atau pisahkan dengan koma.</p>
 
-        <form method="POST" action="{{ route('attendance.recordBulk') }}">
+        <form method="POST" action="{{ route('attendance.recordBulk') }}" class="mt-4 space-y-4">
             @csrf
             <input type="hidden" name="mode" value="{{ $mode }}">
 
             @if($mode === 'lesson')
-                <div class="mt-3">
-                    <label for="bulk_schedule_id" class="block text-sm font-medium text-text mb-1">
-                        Jadwal Pelajaran <span class="text-danger">*</span>
-                    </label>
-                    <select name="schedule_id" id="bulk_schedule_id" required
-                        class="w-full px-3 py-2 rounded-md border border-border bg-white text-text text-sm focus:border-accent outline-none">
+                <div>
+                    <label for="bulk_schedule_id" class="label">Jadwal Pelajaran <span class="text-danger">*</span></label>
+                    <select name="schedule_id" id="bulk_schedule_id" required class="input">
                         <option value="">-- Pilih jadwal --</option>
                         @foreach($schedules as $sched)
                             <option value="{{ $sched->id }}">
@@ -100,17 +78,14 @@
                 </div>
             @endif
 
-            <textarea
-                id="payloads"
-                name="payloads"
-                rows="4"
-                placeholder="SS:...&#10;04A2B3C4D5&#10;0039123456"
-                class="w-full mt-3 px-3 py-2 rounded-md border border-border bg-white text-text text-sm focus:border-accent outline-none font-mono"
-            ></textarea>
+            <div>
+                <label for="payloads" class="label">Kode-kode</label>
+                <textarea id="payloads" name="payloads" rows="4"
+                    placeholder="SS:...&#10;04A2B3C4D5&#10;0039123456"
+                    class="input font-mono"></textarea>
+            </div>
 
-            <button type="submit" class="w-full mt-3 px-4 py-3 bg-primary text-on-primary text-sm font-medium rounded-md hover:bg-primary-hover transition-colors">
-                Proses Semua Kode
-            </button>
+            <button type="submit" class="btn btn-primary w-full py-3">Proses Semua Kode</button>
         </form>
     </div>
 </div>
@@ -119,14 +94,32 @@
     (function () {
         const input = document.getElementById('payload');
         const form = document.getElementById('scan-form');
+        const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
 
         form.addEventListener('submit', function () {
             input.value = '';
         });
 
+        if (tabs.length > 0) {
+            tabs.forEach(function (tab, index) {
+                tab.addEventListener('keydown', function (e) {
+                    const len = tabs.length;
+                    let move = -1;
+                    if (e.key === 'ArrowRight') move = 1;
+                    else if (e.key === 'ArrowLeft') move = -1;
+                    else if (e.key === 'Home') move = -index;
+                    else if (e.key === 'End') move = len - 1 - index;
+                    if (move !== -1) {
+                        e.preventDefault();
+                        tabs[(index + move + len) % len].click();
+                    }
+                });
+            });
+        }
+
         input.focus();
         document.addEventListener('click', function (e) {
-            if (!input.contains(e.target)) {
+            if (input && !input.contains(e.target)) {
                 input.focus();
             }
         });

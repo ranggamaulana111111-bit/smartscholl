@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Manajemen Guru')
 @section('content')
@@ -21,7 +21,7 @@
     </x-panel>
 @else
     <x-panel class="overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -47,7 +47,7 @@
                                 <div class="inline-flex items-center gap-4">
                                     <a href="{{ route('teachers.show', $teacher) }}" class="link">Detail</a>
                                     <a href="{{ route('teachers.edit', $teacher) }}" class="link">Edit</a>
-                                    <form method="POST" action="{{ route('teachers.destroy', $teacher) }}" class="inline" onsubmit="return confirm('Hapus guru ini?');">
+                                    <form method="POST" action="{{ route('teachers.destroy', $teacher) }}" class="inline" data-confirm="Hapus guru ini?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="link link-danger">Hapus</button>

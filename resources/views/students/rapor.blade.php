@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rapor — {{ $student->name }}</title>
+    <title>Rapor | {{ $student->name }}</title>
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|fira-code:400" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

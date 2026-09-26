@@ -1,14 +1,13 @@
 @props(['title', 'eyebrow' => null, 'description' => null])
 
 <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-8">
-    <div>
+    <div class="max-w-2xl">
         @if($eyebrow)
-            <p class="text-xs font-semibold uppercase tracking-widest text-accent">{{ $eyebrow }}</p>
+            <p class="eyebrow">{{ $eyebrow }}</p>
         @endif
-        <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-text">{{ $title }}</h1>
-        <div class="mt-3 w-16 h-0.5 bg-accent"></div>
+        <h1 class="mt-3 display-title text-3xl lg:text-4xl">{{ $title }}</h1>
         @if($description)
-            <p class="mt-4 text-sm text-text-muted max-w-xl">{{ $description }}</p>
+            <p class="mt-3 text-[15px] text-text-muted leading-relaxed">{{ $description }}</p>
         @endif
     </div>
     @isset($actions)

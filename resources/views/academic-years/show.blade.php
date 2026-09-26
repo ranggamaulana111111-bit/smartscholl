@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detail '.$academicYear->name)
 @section('content')
@@ -58,7 +58,7 @@
     @if($rombels->isEmpty())
         <div class="px-4 py-10 text-center text-sm text-text-muted">Belum ada rombel pada tahun ajaran ini.</div>
     @else
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>

@@ -121,9 +121,23 @@
             });
         };
 
-        tabs.forEach(function (tab) {
+        tabs.forEach(function (tab, index) {
             tab.addEventListener('click', function () {
                 select(tab.dataset.settingsTab);
+            });
+            tab.addEventListener('keydown', function (e) {
+                const len = tabs.length;
+                let move = -1;
+                if (e.key === 'ArrowRight') move = 1;
+                else if (e.key === 'ArrowLeft') move = -1;
+                else if (e.key === 'Home') move = -index;
+                else if (e.key === 'End') move = len - 1 - index;
+                if (move !== -1) {
+                    e.preventDefault();
+                    const next = tabs[(index + move + len) % len];
+                    select(next.dataset.settingsTab);
+                    next.focus();
+                }
             });
         });
 

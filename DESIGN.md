@@ -1,42 +1,39 @@
 ```yaml
 ---
-version: alpha
-name: Ubisoft Design System
-description: "Bold, modern gaming platform aesthetic with clean typography and dynamic accent colors, built for seamless navigation across a global audience of players."
+version: 2.0
+name: Smart School Editorial System
+description: "Premium international-school product identity — quiet, editorial, precise. Modern EdTech composed like a well-produced campus publication, not an admin console."
 
 colors:
-  primary: "#000000"
-  primary-hover: "#1a1a1a"
+  primary: "#16345a"
+  primary-hover: "#23508a"
   on-primary: "#ffffff"
-  background: "#ffffff"
-  surface: "#f5f5f5"
-  border: "#e0e0e0"
-  text: "#1a1a1a"
-  text-muted: "#666666"
-  accent: "#ffc906"
-  success: "#2ecc71"
-  warning: "#f39c12"
-  danger: "#e74c3c"
+  background: "#f7f5f0"
+  surface: "#efebe2"
+  border: "#dfd6c1"
+  text: "#202a37"
+  text-muted: "#5a6474"
+  accent: "#c79a3a"
+  accent-hover: "#b08626"
+  accent-deep: "#8c5e00"
+  accent-tint: "#f4ecd6"
+  success: "#16734b"
+  warning: "#9a6500"
+  danger: "#b3261e"
 
 typography:
-  display:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    fontSize: 56px
-    fontWeight: 700
-    lineHeight: 1.05
-    letterSpacing: -0.03em
-  heading:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    fontSize: 32px
-    fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: -0.02em
-  body:
+  sans:
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: 15px
     fontWeight: 400
-    lineHeight: 1.65
+    lineHeight: 1.6
     letterSpacing: -0.01em
+  display:
+    fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif"
+    fontSize: 32px
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: -0.015em
   mono:
     fontFamily: "'Fira Code', 'Courier New', monospace"
     fontSize: 13px
@@ -55,284 +52,200 @@ radius:
   pill: 9999px
 
 shadows:
-  card: "0 2px 8px rgba(0, 0, 0, 0.08)"
-  elevated: "0 8px 24px rgba(0, 0, 0, 0.12)"
-  focus: "0 0 0 3px rgba(255, 201, 6, 0.3)"
+  card: "0 1px 2px rgba(22, 52, 90, 0.05), 0 6px 16px rgba(22, 52, 90, 0.06)"
+  elevated: "0 2px 4px rgba(22, 52, 90, 0.06), 0 16px 40px rgba(22, 52, 90, 0.14)"
+  focus: "0 0 0 3px rgba(199, 154, 58, 0.4)"
 
 motion:
   duration-fast: 150ms
   duration-base: 250ms
-  duration-slow: 400ms
+  duration-slow: 420ms
   easing: "cubic-bezier(0.4, 0, 0.2, 1)"
+  easing-editorial: "cubic-bezier(0.22, 1, 0.36, 1)"
 ---
+```
 
 ## Rationale
 
-Ubisoft is a global gaming entertainment powerhouse serving hundreds of millions of players across console, PC, and mobile platforms. The design system must balance premium brand perception with functional clarity—supporting everything from hero game announcements to complex account management and store navigation. A light-first approach ensures accessibility across low-light gaming sessions while maintaining professional credibility in a crowded digital landscape.
+Smart School Enterprise is a **premium international-school product**. Its visual voice
+should feel like a well-produced campus publication — confident, quiet, and precise —
+not like a gaming console or a dense admin database. The identity was rebuilt around
+three ideas: **editorial typography**, **bento composition**, and **restrained motion**.
 
-The color palette anchors around black as primary, signaling the core gaming/entertainment identity, with a vibrant golden-yellow accent (#ffc906) that echoes Ubisoft's traditional brand warmth and creates energy without overwhelming. This pairing is both distinctly Ubisoft and functionally strong for CTAs, highlights, and interactive states. The palette is deliberately constrained to reduce cognitive load and maximize scannability across device types.
+**Paper canvas.** The base is a warm paper white (`#f7f5f0`) with sand surfaces. White
+cards sit on paper. This prints warmth without noise and gives an "of a school, not a
+warehouse" reading that pure `#ffffff` cannot.
 
-Typography leverages Inter—a modern, highly legible humanist sans-serif optimized for screens—across all scales. The hierarchy is aggressive but proportionate, supporting both large-scale hero messaging and dense UI density in dashboards. Generous line-height and letter-spacing maintain comfort during extended sessions. Spacing follows an 8px base grid, enabling rhythm, predictability, and responsive scaling from mobile to 4K displays.
+**Ink navy.** The primary is a deep educational navy (`#16345a`) — the color of
+university crests and school blazers. It replaces pure black as the anchor for
+headlines, primary buttons, the sidebar, and inverse hero cards. On dark navy,
+champagne gold reads AAA.
 
-Motion is purposeful and snappy, supporting the energetic nature of gaming culture while never feeling frivolous. Transitions respect reduced-motion preferences, ensuring players with vestibular sensitivities experience a clean, accessible interface. The overall aesthetic is "confident minimalism"—enough visual refinement to feel premium, but enough restraint to stay invisible and let games and content shine.
+**Champagne gold.** The accent is a muted champagne (`#c79a3a`), used for CTAs, active
+markers, decorative rules, and highlights **on dark/inverse surfaces** only. Where text
+must stand on light paper, the design uses a deeper academic bronze
+(`--color-accent-deep`, `#8c5e00`) that passes WCAG AA. Bright gold is never body text
+on white — this removes the earlier 1.5:1 contrast failure at the source.
+
+**Serif display.** Fraunces is the editorial display face for headlines, big metrics,
+and empty-state titles, setting the product apart from generic SaaS sans. Inter keeps
+UI and body copy neutral and legible. One display face, one sans, one mono.
+
+**Bento is a composition system, not a component.** Dashboards are recomposed as
+asymmetric editorial grids with a dominant hero, supporting panels, and scannable
+feeds — never the flat "four equal metric cards" pattern.
 
 ## 1. Visual Theme & Atmosphere
 
-Ubisoft's visual identity merges sleek modernism with gaming energy. The interface employs negative space liberally, avoiding visual clutter that might distract from game content, social feeds, or store imagery. Surfaces are clean with subtle depth (soft shadows), typography breathes, and interactive elements have clear affordances without excessive ornamentation.
+Quiet authority. Negative space is generous; surfaces whisper with hairline borders and
+soft shadows instead of shouting with thick strokes. Hierarchy is expressed by serif
+size/weight, tracking, and color contrast — not decoration.
 
-The atmosphere is welcoming yet authoritative—a professional entertainment platform, not a scrappy indie site. Dark mode may be offered separately (respecting user preference), but light-first ensures maximum accessibility and legibility for a global, age-diverse audience. Accent color (golden yellow) is used sparingly but decisively to guide attention and celebrate player moments.
-
-Visual hierarchy is determined by size, weight, and color contrast rather than decoration. Buttons, inputs, and navigation elements are immediately recognizable through consistent form language. Imagery (game trailers, artwork, community content) is the star; the UI is the supporting frame.
+The atmosphere is **prestigious but warm**: trustworthy enough for wali kelas and
+professional enough for Dinas Pendidikan. Light-first by default for accessibility;
+motion is present but never playful (no spinning cubes, no tilt-toys).
 
 ## 2. Color System
 
-**Primary (#000000):** Foundational black for high-contrast text, primary buttons, borders, and core navigation. Projects authority and gaming credibility. Hover state (#1a1a1a) adds subtle depth for interactive feedback.
+**Primary — Ink navy `#16345a`:** headlines, primary buttons, sidebar, inverse heroes,
+table header rules. Projects institutional credibility. Hover `#23508a`.
 
-**On-Primary (#ffffff):** White text, icons, and elements on black backgrounds. Ensures WCAG AAA contrast (21:1).
+**On-Primary `#ffffff`:** white on ink navy (11.8:1, AAA).
 
-**Background (#ffffff):** Default page background for light-first design. Maximum accessibility, supports all content types.
+**Background — Paper `#f7f5f0`:** default canvas. Warm, calm, reduces glare.
 
-**Surface (#f5f5f5):** Elevated cards, panels, modals, and contained sections. Subtle differentiation from background without harsh contrast. Useful for layering and grouping related content (e.g., game cards in library, friend lists).
+**Surface — Sand `#efebe2`:** quiet containers, secondary cards, empty states.
 
-**Border (#e0e0e0):** Dividers, input borders, and structural lines. Light enough to reduce visual noise, dark enough to define structure. Used at 1-2px weight.
+**Border `#dfd6c1`:** hairline rules and input borders. Warmer than neutral gray.
 
-**Text (#1a1a1a):** Body copy and primary readable content. Near-black for comfort and WCAG compliance (19:1 contrast on white).
+**Accent — Champagne `#c79a3a`:** CTAs (with ink text, 5.1:1), active nav bar, progress
+on inverse, decorative rules, highlights on navy. **Accent-deep `#8c5e00`:** emphasis
+text, eyebrows, and icons on light backgrounds (5.3:1, AA).
 
-**Text-Muted (#666666):** Secondary, descriptive, or de-emphasized text (timestamps, metadata, help text). Still maintains 4.5:1 contrast for accessibility.
+**Success `#16734b` / Warning `#9a6500` / Danger `#b3261e`:** status colors chosen for
+AA contrast on paper; tinted badge backgrounds use soft pastels.
 
-**Accent (#ffc906):** Ubisoft's signature warm gold. Used for primary CTAs, active states, highlights, achievements, and celebratory moments. High visual punch without aggression. Hover: #ffb700 (darker variant for depth).
-
-**Success (#2ecc71):** Green for confirmations, completed actions, and positive feedback (e.g., "purchase successful," "friend request accepted").
-
-**Warning (#f39c12):** Amber/orange for alerts requiring attention (e.g., "storage full," "authentication required," "limited-time offer").
-
-**Danger (#e74c3c):** Red for destructive actions, errors, and critical alerts (e.g., "delete account," "connection lost," "banned player").
-
-**Contrast Notes:**
-- Black on white: 21:1 (AAA)
-- Gold on white: 3.8:1 (AA for large text only; never use for body)
-- Gold on black: 7.2:1 (AAA)
-- Muted gray on white: 4.5:1 (AA)
+**Contrast notes:**
+- Ink navy on paper: ~12.6:1 (AAA)
+- Champagne gold on ink navy: ~8.5:1 (AAA)
+- Bronze (`#8c5e00`) on paper: ~5.3:1 (AA)
+- Muted gray (`#5a6474`) on paper: ~5.6:1 (AA)
+- Ink navy on champagne (`#c79a3a`): ~5.1:1 (AA for button label)
 
 ## 3. Typography
 
-**Display (56px, 700 weight):** Hero headlines, splash screens, major announcements (e.g., "Assassin's Creed Mirage Now Available"). One per page maximum. Tight line-height creates punch.
+**Display — Fraunces (600):** page headlines, hero numerals, section titles, card
+titles, empty-state titles, QR-card names. One per composition role; tight
+`line-height 1.1`, `letter-spacing -0.015em`.
 
-**Heading (32px, 600 weight):** Section titles, dialog headers, major feature announcements. Secondary hierarchy, used frequently.
+**Sans — Inter (400/500/600):** body, labels, buttons, tables, forms. 15px body with
+generous 1.6 line-height. Uppercase micro-labels (eyebrows, table heads, labels) use
+600 weight with wide tracking (`0.08em`–`0.18em`) and muted or bronze color.
 
-**Body (15px, 400 weight):** All readable content—descriptions, metadata, form labels, help text. Generous 1.65 line-height supports readability across screen sizes and gaming environments.
-
-**Mono (13px, 400 weight):** Code snippets, API documentation, technical error messages, player IDs, and asset identifiers. Lower weight keeps it friendly; monospace signals technical context.
-
-Inter is chosen for its geometric simplicity, excellent screen rendering at small sizes, and neutral-yet-warm character that suits both hardcore gamers and casual audiences. No serifs, no quirks—maximum legibility and cross-platform consistency.
+**Mono — Fira Code:** identifiers, codes, technical fields.
 
 ## 4. Components & Patterns
 
-### Button (Primary)
-- **Default:** Black background (#000000), white text, 8px radius
-- **Hover:** Background #1a1a1a, slight lift shadow (card shadow)
-- **Active:** Background #000000, inset shadow (1px 1px 0 rgba(0,0,0,0.2))
-- **Disabled:** Background #e0e0e0, text #999999, no hover
-- **Sizes:** Small (32px height), Medium (44px), Large (56px)
-- **Minimum touch target:** 44×44px
+### Brand mark
+40×40 rounded square, ink navy fill, champagne serif "S", inset 1px champagne ring.
+`--sm` 32px for header, `--lg` 56px for login/hero. Replaces the previous "gaming
+glyph tile" with a quiet crest-like emblem.
 
-### Button (Accent/CTA)
-- **Default:** Golden yellow (#ffc906), black text, 8px radius
-- **Hover:** Background #ffb700, slight lift shadow
-- **Active:** Background #ffc906, inset shadow
-- **Disabled:** Background #f0e6cc, text #999999
-- Used sparingly for primary calls-to-action: "Play Now," "Purchase," "Join Event," etc.
+### Buttons
+- **Primary:** ink navy bg, white text, 8px radius. Hover: hover shade + soft shadow.
+- **Accent/CTA:** champagne bg, ink text (~5.1:1). Hover: deeper gold + white text.
+- **Ghost:** transparent, 1px warm border, ink text. Hover: white bg + ink border.
+- Sizes: sm 34px, default 44px, lg 56px. Minimum touch target 44×44 (sm used only in
+  dense rows next to 44px peers).
 
-### Button (Ghost/Secondary)
-- **Default:** Transparent, black text (#1a1a1a), 2px black border
-- **Hover:** Background #f5f5f5, border #000000
-- **Active:** Background #e0e0e0
-- Used for secondary actions that shouldn't compete for attention.
+### Navigation
+- **Sidebar:** white on paper, 1px warm hairline right, 280px. Brand block on top with
+  emblem + school name; nav sections as uppercase micro-labels; active item = ink text,
+  champagne left rule, pale champagne tint pill. Footer user card + logout.
+- **Header:** sticky, translucent paper backdrop-blur, hairline bottom. Hamburger
+  (mobile), tenant/role, date, avatar. No clutter.
 
-### Text Input / Textarea
-- **Default:** White background, 1px border (#e0e0e0), 8px padding, 8px radius
-- **Focus:** 2px border (#000000), shadow "0 0 0 3px rgba(255, 201, 6, 0.3)"
-- **Error state:** Border #e74c3c, error message in red below
-- **Placeholder:** #999999, italic
-- **Label:** Above input, 12px weight 600, dark text
+### Card / Bento
+- White cards layered on paper with hairline border + soft card shadow; radius 12px.
+- Link cards lift -3px with elevated shadow on hover.
+- Inverse cards: ink navy with white text and champagne accents, elevated shadow.
 
-### Checkbox / Radio
-- **Default:** 20×20px, border #e0e0e0, background white
-- **Hover:** Border #000000
-- **Checked:** Background #000000, white checkmark/radio fill
-- **Disabled:** Background #f5f5f5, border #999999
-- **Focus:** Surrounding outline as per focus style
+### Tables
+- Transparent header, uppercase 11px muted labels with **2px ink bottom rule**; body
+  rows on hairline borders; hover sand; horizontal scroll on mobile.
 
-### Card (Content)
-- **Background:** #f5f5f5
-- **Border:** Optional 1px #e0e0e0 or shadow only (card shadow)
-- **Padding:** 16-24px
-- **Radius:** 8-12px
-- **Used for:** Game tiles in library, news articles, user profiles, event promotions, store listings
-- **Hover state:** Lift to elevated shadow, scale 1.02 (very subtle)
+### Form
+- White inputs, warm hairline border, 8px radius, 44px min height. Focus = ink border +
+  champagne ring. Labels are uppercase micro-labels above the field. 16px input font on
+  touch devices to avoid iOS zoom.
 
-### Navigation Bar (Top)
-- **Background:** #ffffff, 1px bottom border (#e0e0e0)
-- **Height:** 64px
-- **Items:** Logo (left), menu links (center/right), user profile icon (far right)
-- **Active link:** Underline or background accent color, bold weight
-- **Mobile:** Hamburger menu, converts to slide-out drawer
+### Empty state
+- Sand tile with bronze line icon, serif title, muted hint, optional action.
 
-### Navigation Drawer / Sidebar
-- **Background:** #f5f5f5
-- **Width:** 280px (desktop), full width mobile
-- **Items:** Links, nested categories, user avatar, logout
-- **Active state:** Left accent bar (#ffc906), bold text
-- **Scrollable:** Y-overflow if needed
-- **Z-index:** Above content on mobile
-
-### Badge / Label
-- **Background:** #f5f5f5, border 1px #e0e0e0
-- **Text:** 12px, #1a1a1a
-- **Padding:** 4px 12px
-- **Radius:** 4px
-- **Variants:** Success (green), Warning (amber), Danger (red) backgrounds with white or dark text
-
-### Loading State
-- **Spinner:** 32×32px, golden accent color (#ffc906) rotating, 1.2s cubic-bezier easing
-- **Skeleton:** Lighter gray (#e0e0e0) pulsing at 1.5s interval, respects prefers-reduced-motion (no pulse, just static gray)
-- **Message:** "Loading..." in muted text below spinner
-
-### Modal / Dialog
-- **Overlay:** rgba(0, 0, 0, 0.5) semi-transparent background
-- **Box:** White background, 12px radius, 24-32px padding, elevated shadow
-- **Header:** Close button (top right, "×" or icon), title in heading style
-- **Body:** Body text, centered or left-aligned
-- **Footer:** Action buttons (primary accent CTA on right, secondary ghost on left)
-- **Max-width:** 480px desktop, full - 32px mobile
-
-### Toast / Notification
-- **Position:** Bottom-right, 16px from edges
-- **Background:** #1a1a1a (dark), white text
-- **Padding:** 12-16px
-- **Radius:** 8px
-- **Auto-dismiss:** 4 seconds
-- **Variants:** Success (green accent bar on left), Warning (amber), Danger (red)
-
-### Data Table
-- **Header row:** Background #f5f5f5, text 600 weight, 48px height
-- **Body rows:** White background, 1px bottom border (#e0e0e0), 40px min height
-- **Cells:** 12px padding, text #1a1a1a
-- **Hover row:** Background #f5f5f5 (subtle highlight, optional)
-- **Sortable columns:** Header shows up/down arrow, cursor: pointer
-- **Responsive:** Horizontal scroll on mobile with fixed first column
+### Toast
+- Ink navy bar, white text, 4px champagne/success/warning/danger left rule, bottom-right,
+  auto-dismiss reinforced with close button.
 
 ## 5. Spacing & Layout
 
-**8px Base Grid:** All spacing increments by 8 (4, 8, 12, 16, 24, 32, 48, 64, 96, 128). This ensures rhythm and predictability.
-
-**Common spacing:**
-- **Page padding:** 24px mobile, 32px tablet, 48px desktop
-- **Section gap:** 48px vertical
-- **Component internal padding:** 16px (buttons, cards, inputs)
-- **Margin between form fields:** 24px
-- **Margin between sections:** 32-48px
-
-**Max-width:**
-- **Content container:** 1280px (generous for game imagery and store layouts)
-- **Sidebar + content:** Sidebar 280px fixed, content flexible; stacks on mobile
-- **Modal max-width:** 480px
-- **Article/blog:** 720px for readability
-
-**Grid system (optional, for dashboards):**
-- 12-column grid, 16px gutter, responsive 4-column (mobile), 8-column (tablet), 12-column (desktop)
-
-**Margin / Padding ratio:** Generally 1:1 for balance, but buttons and inputs use 8:16 (h:w) for clickability.
+- Base 8px grid; page padding 24px mobile / 32px tablet / 48px desktop.
+- Content max-width 1280px; sidebar 280px + content on lg; stack on mobile.
+- Bento grid: 12 columns desktop, collapsed single column mobile, 1.25rem gaps.
+- Section vertical spacing 32–48px; component internal padding 16–24px.
 
 ## 6. Motion & Interaction
 
-**Duration:**
-- **Fast (150ms):** Hover state changes, icon transitions, simple toggles (e.g., expand/collapse)
-- **Base (250ms):** Modal enter/exit, card lift, navigation transitions, form submissions
-- **Slow (400ms):** Page transitions, hero animations, staggered list reveals
-
-**Easing:** `cubic-bezier(0.4, 0, 0.2, 1)` (Material's "standard" easing) for all transitions. Feels natural, responsive, neither sluggish nor jarring.
-
-**Hover states:**
-- Buttons: Lift 2px, shadow elevation
-- Cards: Lift 4px, shadow elevation, optional subtle scale (1.02)
-- Links: Underline appears or color changes to accent
-- Inputs: Border color darkens, optional background lighten
-
-**Focus states:**
-- Visible outline, 2px solid accent color (#ffc906), 2px offset, 4px radius
-- Applies to buttons, inputs, links, tabs
-- Works with keyboard navigation (Tab, Shift+Tab)
-
-**Loading patterns:**
-- Spinner for indeterminate progress (network requests, asset loading)
-- Progress bar for determinate (file uploads, downloads) — 6px height, accent color
-- Skeleton screens for content placeholders (smoother perceived load)
-
-**Scrolling:**
-- Smooth scroll-behavior enabled
-- Sticky headers (navigation, table headers) with subtle shadow on scroll
-
-**Reduced motion:**
-- `@media (prefers-reduced-motion: reduce)` removes all motion
-- Spinner becomes static pulse or just shows icon
-- Transitions become instantaneous (0ms)
-- Hover lift removed, state change via color/opacity only
+- **Fast 150ms:** hovers, color changes, toggle tracks.
+- **Base 250ms:** card lift, modal, form submission feedback.
+- **Slow 420ms:** page enter, scroll reveals — easing `cubic-bezier(0.22, 1, 0.36, 1)`
+  (editorial ease-out).
+- **Page enter:** single 12px fade/slide on `#main-content`.
+- **Scroll reveal:** IntersectionObserver fade/slide, one-shot, respects
+  `prefers-reduced-motion`.
+- Layout feels like paper turning — no continuous looping animation, no 3D parallax
+  toys. Hover lifts at most 3px; focus uses champagne ring + dark offset.
 
 ## Accessibility
 
-### Contrast Ratios
+- **Contrast:** all text/background pairs audited to AA or AAA on the paper canvas
+  (see color contrast notes). Gold is only text on navy, never on white.
+- **Focus:** 2px bronze outline + 2px dark offset, or champagne ring on inputs.
+- **Keyboard:** full tab order, skip link, focus trap in drawers/modals, arrow-nav for
+  menus, Escape closes overlays.
+- **Motion:** all animation dies under `prefers-reduced-motion: reduce`.
+- **Touch:** 44×44px targets; 16px inputs on mobile.
+- **Color never alone:** status always pairs a tint, an icon/dot, and text.
+- **Semantics:** `<nav>`, `<main>`, `aria-label`, `aria-expanded`, `aria-current`,
+  `aria-live` for toasts; labels bound to inputs.
 
-| Color Pair | Ratio | Level |
-|---|---|---|
-| Black (#000000) on white (#ffffff) | 21:1 | AAA |
-| Muted gray (#666666) on white (#ffffff) | 4.5:1 | AA |
-| Gold (#ffc906) on white (#ffffff) | 3.8:1 | AA (large text only, 18px+) |
-| Gold (#ffc906) on black (#000000) | 7.2:1 | AAA |
-| Accent/Gold on surface (#f5f5f5) | ~5.2:1 | AA |
-| Success green (#2ecc71) on white | 5.3:1 | AA |
-| Warning amber (#f39c12) on white | 6.2:1 | AAA |
-| Danger red (#e74c3c) on white | 5.2:1 | AA |
+## Non-Negotiable Rules
 
-### Minimum Requirements
+1. Champagne gold (`#c79a3a`) is **never** used as small text on light backgrounds —
+   that is what `--color-accent-deep` (bronze) is for.
+2. Every page keeps a single focal hero item; the rest is support.
+3. No spinning/looping/3D "gaming" motion in the product.
+4. Dashboards are composed as asymmetric bento, never four equal metric cards.
+5. All blades rely on the token utility classes so the system stays centralized.
 
-- **Touch target:** 44×44px minimum for all interactive elements (buttons, inputs, links)
-- **Focus indicator:** 2px solid accent (#ffc906) outline, 2px offset, 4px radius
-- **Focus contrast:** 7.2:1 (gold on black backgrounds), 3.8:1 (gold on white—acceptable for interactive elements, enhanced via outline)
-- **Color alone:** Never use color to convey state alone (e.g., red means error). Always pair with icon, text, or pattern.
-- **Text:** Minimum 14px for body text; 16px on mobile inputs (avoids auto-zoom on iOS)
-- **Line-height:** Minimum 1.5 for readability
-- **Link identification:** All links must be underlined or have non-color indicator (icon, bold, etc.)
+## Design Dials & Documented Trade-offs
 
-### Motion
+Dials (per antislop R-37) declared once, applied everywhere:
 
-- All animations and transitions respect `prefers-reduced-motion: reduce` media query
-- No auto-playing videos or animations on page load
-- Parallax and vestibular-triggering effects disabled for users with reduced-motion preference
-- Spinners and loaders become static or fade-based (no rotation)
+- **ENERGY 2** — calm and assured; hierarchy comes from serif display + scale, not
+  noise, vividness, or decorative clutter.
+- **RHYTHM 3** — bento layouts are deliberately asymmetric (8/4, 7/5, 4/2/2 patterns);
+  equal grids are used only when content is equal-weight (e.g., module cards on the
+  landing page).
+- **MOTION 2** — one-shot page-enter and scroll reveals + subtle hovers only; no
+  looping, no parallax, no tilt. Everything dies under `prefers-reduced-motion`.
 
-### Keyboard Navigation
+Documented trade-offs (answers to antislop R-14 / R-11):
 
-- Full keyboard support (Tab, Shift+Tab, Enter, Escape, Arrow keys where applicable)
-- Logical tab order following visual flow (top-to-bottom, left-to-right)
-- Menu navigation with Arrow Up/Down, Escape to close
-- Modals trap focus (Tab cycles within modal)
-- Skip link to main content (hidden by default, visible on focus)
-
-### Screen Reader Support
-
-- Semantic HTML: `<button>`, `<a>`, `<input>`, `<nav>`, `<main>`, `<aside>`, `<article>`, `<section>`
-- `aria-label` for icon-only buttons and actionable elements
-- `aria-expanded` for collapsible sections
-- `aria-current="page"` for active navigation links
-- Form labels properly associated via `<label for="id">` or wrapped
-- Error messages linked to inputs via `aria-describedby`
-- Loading states announced via `aria-live="polite"` regions
-
-### Notes
-
-Ubisoft's global audience spans ages 6–65+ and diverse abilities. Accessibility is not optional—it's core to brand inclusivity. All interactive elements must be keyboard accessible; all meaningful images require alt text; all color choices are tested for colorblindness (deuteranopia, protanopia, tritanopia). The golden accent color is vibrant enough to be visible in low-light gaming environments and distinct enough for colorblind users when paired with text or icons.
-
-Testing: Contrast checked via WebAIM Contrast Checker; keyboard navigation via keyboard-only browsing; screen reader tested on NVDA (Windows) and VoiceOver (macOS/iOS); motion tested with prefers-reduced-motion enabled; mobile tested on 44px touch targets and 16px input font size.
-
-```
+- **Uniform module cards (landing "Modul Utama").** The four product modules are
+  deliberately equal-weight capabilities, so they render as equal cards; the bento
+  variance lives in the dashboards where hierarchy is operational, not promotional.
+- **Uniform radius (`--radius-card`).** Consistent radius is an editorial consistency
+  motif (like a magazine's margins). Hierarchy is expressed through scale (serif
+  display sizes), weight, and color, not through changing radii.
+- **Accent placement.** Champagne is reserved for CTA fills, small rules, and marks
+  on navy; bronze (`--color-accent-deep`) carries all small text on light surfaces.

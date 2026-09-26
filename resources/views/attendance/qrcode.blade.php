@@ -3,12 +3,10 @@
 @section('title', 'QR: ' . $student->name)
 @section('content')
 <div class="max-w-sm mx-auto print:max-w-none print:m-0">
-    <div class="mb-6 flex items-start justify-between gap-4 print:hidden">
-        <div>
-            <a href="{{ route('attendance.qrcodes') }}" class="text-sm text-text-muted hover:text-accent transition-colors">&larr; Daftar kartu</a>
-            <h1 class="font-display text-2xl font-semibold text-text mt-2">Kartu QR Siswa</h1>
-            <p class="text-sm text-text-muted mt-1">Cetak kartu ini sebagai kartu pelajar ber-QR.</p>
-        </div>
+    <div class="print:hidden mb-6">
+        <a href="{{ route('attendance.qrcodes') }}" class="link">&larr; Daftar kartu</a>
+        <h1 class="font-display text-2xl font-semibold text-text mt-3">Kartu QR Siswa</h1>
+        <p class="text-sm text-text-muted mt-1">Cetak kartu ini sebagai kartu pelajar ber-QR.</p>
     </div>
 
     <div class="qr-card">

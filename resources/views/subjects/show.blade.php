@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detail '.$subject->name)
 @section('content')
@@ -60,7 +60,7 @@
             Belum ada jadwal untuk mata pelajaran ini.
         </div>
     @else
-        <div class="overflow-x-auto">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>

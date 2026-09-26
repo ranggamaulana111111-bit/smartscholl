@@ -41,15 +41,13 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-            <label for="subject_id" class="label">Mata Pelajaran Utama</label>
+            <label for="subject_id" class="label">Mata Pelajaran Utama <span class="text-danger">*</span></label>
             <select id="subject_id" name="subject_id" class="input @error('subject_id') border-danger @enderror" @error('subject_id') aria-invalid="true" @enderror>
                 <option value="">-- Pilih --</option>
                 @foreach ($subjects as $subject)
                     <option value="{{ $subject->id }}" @selected((string) old('subject_id') === (string) $subject->id)>{{ $subject->name }}</option>
                 @endforeach
             </select>
-            <label for="subject_text" class="label mt-4">Mapel lain (catatan bebas)</label>
-            <input type="text" id="subject_text" name="subject_text" value="{{ old('subject_text') }}" maxlength="100" class="input">
             @error('subject_id')
                 <p class="error-text">{{ $message }}</p>
             @enderror

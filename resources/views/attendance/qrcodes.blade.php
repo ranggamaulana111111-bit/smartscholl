@@ -2,12 +2,10 @@
 
 @section('title', 'Cetak QR Siswa')
 @section('content')
-<div class="mb-6 flex items-start justify-between gap-4">
-    <div>
-        <h1 class="font-display text-2xl font-semibold text-text">Kartu QR Siswa</h1>
-        <p class="text-sm text-text-muted/70 mt-1">QR berisi token unik siswa, untuk scanner kehadiran gerbang.</p>
-    </div>
-</div>
+<x-page-head title="Kartu QR Siswa"
+    description="QR berisi token unik siswa, untuk scanner kehadiran gerbang."
+    eyebrow="Absensi">
+</x-page-head>
 
 <div class="bg-white border border-border rounded-md p-6 print:border-none print:p-0 print:shadow-none">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 card-grid">
@@ -24,7 +22,7 @@
                     <p class="qr-card__row"><span>NISN</span><strong class="font-mono">{{ $student->nisn }}</strong></p>
                     <p class="qr-card__row"><span>Rombel</span><strong>{{ $student->rombel?->name ?? '-' }}</strong></p>
                     <p class="mt-2 print:hidden">
-                        <a href="{{ route('attendance.qrcode', $student) }}" class="text-xs font-medium text-text underline decoration-accent underline-offset-4 hover:text-accent transition-colors">Cetak kartu ini &rarr;</a>
+                        <a href="{{ route('attendance.qrcode', $student) }}" class="text-xs font-medium text-text underline decoration-accent underline-offset-4 hover:text-accent-deep transition-colors">Cetak kartu ini &rarr;</a>
                     </p>
                 </div>
             </div>

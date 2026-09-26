@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', setting('sistem.app_name', 'Smart School'))</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|fira-code:400" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=fraunces:500,600,700|inter:400,500,600,700|fira-code:400" rel="stylesheet" />
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -15,27 +15,29 @@
 
     @auth
         <div class="min-h-screen flex">
-            <aside id="sidebar" class="hidden lg:flex w-[280px] shrink-0 bg-surface border-r border-border flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto" role="navigation" aria-label="Navigasi Utama">
-                <div class="p-5 border-b border-border">
+            <aside id="sidebar" class="hidden lg:flex w-[280px] shrink-0 bg-white border-r border-border flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto" role="navigation" aria-label="Navigasi Utama">
+                <div class="px-5 pt-5 pb-5 border-b border-border">
                     <div class="flex items-center gap-3">
-                        <span class="w-9 h-9 rounded-lg bg-primary text-accent flex items-center justify-center font-bold text-lg">{{ setting('sistem.brand_glyph', 'S') }}</span>
+                        <span class="brand-mark" aria-hidden="true">{{ setting('sistem.brand_glyph', 'S') }}</span>
                         <div class="min-w-0">
-                            <p class="font-bold text-sm tracking-tight text-text">{{ setting('sistem.app_name', 'Smart School') }}</p>
+                            <p class="font-display font-semibold text-[17px] tracking-tight text-text truncate">{{ setting('sistem.app_name', 'Smart School') }}</p>
                             <p class="text-xs text-text-muted truncate">{{ auth()->user()->tenant->name ?? 'Super Admin' }}</p>
                         </div>
                     </div>
+                    <div class="mt-4 rule-accent"></div>
                 </div>
 
                 @php
-                    $activeClass = 'bg-background font-semibold text-text border-l-[3px] border-accent';
-                    $inactiveClass = 'text-text-muted hover:bg-background hover:text-text border-l-[3px] border-transparent';
+                    $activeClass = 'bg-accent-tint font-semibold text-text border-l-[3px] border-accent shadow-[0_1px_2px_rgba(22,52,90,0.05)]';
+                    $inactiveClass = 'text-text-muted hover:bg-surface/70 hover:text-text border-l-[3px] border-transparent';
                 @endphp
 
-                <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
+                <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-text-muted px-3 pt-2 pb-1">Ringkasan</p>
                     <a href="{{ route('dashboard') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }}"
                        @if(request()->routeIs('dashboard')) aria-current="page" @endif>
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm0 7h6v-4H4v4zm10 0h6V11h-6v9zm0-16v4h6V4h-6z"/></svg>
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm0 7h6v-4H4v4zm10 0h6V11h-6v9zm0-16v4h6V4h-6z"/></svg>
                         Dashboard
                     </a>
 
@@ -53,7 +55,7 @@
                             <a href="{{ route(str_replace('.*', '.index', $item['route'])) }}"
                                class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs($item['route']) ? $activeClass : $inactiveClass }}"
                                @if(request()->routeIs($item['route'])) aria-current="page" @endif>
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">{!! $item['icon'] !!}</svg>
                                 {{ $item['label'] }}
                             </a>
                         @endforeach
@@ -75,7 +77,7 @@
                             <a href="{{ route(str_replace('.*', '.index', $item['route'])) }}"
                                class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs($item['route']) ? $activeClass : $inactiveClass }}"
                                @if(request()->routeIs($item['route'])) aria-current="page" @endif>
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">{!! $item['icon'] !!}</svg>
                                 {{ $item['label'] }}
                             </a>
                         @endforeach
@@ -87,14 +89,14 @@
                         <a href="{{ route('audit-logs.index') }}"
                            class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('audit-logs.*') ? $activeClass : $inactiveClass }}"
                            @if(request()->routeIs('audit-logs.*')) aria-current="page" @endif>
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Audit Trail
                         </a>
 
                         <a href="{{ route('settings.index') }}"
                            class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('settings.*') ? $activeClass : $inactiveClass }}"
                            @if(request()->routeIs('settings.*')) aria-current="page" @endif>
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.807-.108 1.205.164.396.506.71.93.78l.893.149c.543.09.94.56.94 1.11v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.424.07-.766.384-.93.78-.165.398-.143.854.107 1.205l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.108-.397.165-.71.506-.78.93l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.737.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.272-.807.108-1.205-.164-.396-.506-.71-.93-.78l-.893-.149a1.125 1.125 0 01-.94-1.11v-1.094c0-.55.397-1.02.94-1.11l.893-.149c.424-.07.766-.384.93-.78.165-.398.143-.854-.107-1.205l-.527-.738a1.125 1.125 0 01.12-1.45l.774-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.108.397-.165.71-.506.78-.93l.149-.894zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.807-.108 1.205.164.396.506.71.93.78l.893.149c.543.09.94.56.94 1.11v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.424.07-.766.384-.93.78-.165.398-.143.854.107 1.205l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.108-.397.165-.71.506-.78.93l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.93-.398-.164-.855-.142-1.205.108l-.737.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.272-.807.108-1.205-.164-.396-.506-.71-.93-.78l-.893-.149a1.125 1.125 0 01-.94-1.11v-1.094c0-.55.397-1.02.94-1.11l.893-.149c.424-.07.766-.384.93-.78.165-.398.143-.854-.107-1.205l-.527-.738a1.125 1.125 0 01.12-1.45l.774-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.108.397-.165.71-.506.78-.93l.149-.894zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             Pengaturan
                         </a>
                     @endif
@@ -103,15 +105,15 @@
                         <a href="{{ route('parent.dashboard') }}"
                            class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('parent.*') ? $activeClass : $inactiveClass }}"
                            @if(request()->routeIs('parent.*')) aria-current="page" @endif>
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
                             Portal Anak
                         </a>
                     @endif
                 </nav>
 
-                <div class="p-4 border-t border-border">
+                <div class="p-4 border-t border-border bg-surface/60">
                     <div class="flex items-center gap-3">
-                        <span class="w-9 h-9 rounded-full bg-primary text-accent flex items-center justify-center text-sm font-bold shrink-0">
+                        <span class="brand-mark brand-mark--sm" aria-hidden="true">
                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                         </span>
                         <div class="flex-1 min-w-0">
@@ -119,9 +121,9 @@
                             <p class="text-xs text-text-muted truncate">{{ str_replace('_', ' ', ucfirst(auth()->user()->role)) }}</p>
                         </div>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}" class="mt-3">
+                    <form method="POST" action="{{ route('logout') }}" class="mt-3" data-busy>
                         @csrf
-                        <button type="submit" class="w-full text-left text-sm text-text-muted hover:text-danger px-3 py-2 rounded-lg hover:bg-red-50 min-h-[44px] transition-colors duration-fast">
+                        <button type="submit" class="w-full text-left text-sm text-text-muted hover:text-danger px-3 py-2 rounded-lg hover:bg-danger/10 min-h-[44px] transition-colors duration-fast">
                             Keluar
                         </button>
                     </form>
@@ -129,17 +131,28 @@
             </aside>
 
             <div class="flex-1 lg:ml-[280px]">
-                <header class="sticky top-0 z-20 bg-background border-b border-border h-16 flex items-center px-4 lg:px-8">
-                    <button id="sidebar-toggle" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface transition-colors min-h-[44px] min-w-[44px] items-center justify-center" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="sidebar">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <header class="site-header sticky top-0 z-20 border-b border-border h-16 flex items-center gap-4 px-4 lg:px-8">
+                    <button id="sidebar-toggle" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="sidebar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
+                    <div class="hidden sm:flex flex-col min-w-0 leading-tight">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-text-muted truncate">{{ auth()->user()->tenant->name ?? 'Super Admin' }}</span>
+                        <span class="text-sm font-semibold text-text truncate">{{ str_replace('_', ' ', ucfirst(auth()->user()->role)) }}</span>
+                    </div>
                     <div class="flex-1"></div>
+                    <time class="hidden md:flex flex-col items-end leading-tight">
+                        <span class="text-sm font-semibold text-text">{{ now()->translatedFormat('l, d M Y') }}</span>
+                        <span class="text-xs text-text-muted">{{ now()->translatedFormat('H:i') }} WIB</span>
+                    </time>
                     <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold text-text">{{ auth()->user()->name }}</span>
+                        <span class="brand-mark brand-mark--sm" aria-hidden="true">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </span>
+                        <span class="hidden lg:block text-sm font-semibold text-text">{{ auth()->user()->name }}</span>
                     </div>
                 </header>
 
-                <main id="main-content" class="p-4 lg:p-8 max-w-[1280px] mx-auto">
+                <main id="main-content" class="page-enter p-4 lg:p-8 max-w-[1280px] mx-auto">
                     @if(session('success') || session('info') || session('error'))
                         <div class="toast {{ session('error') ? 'toast-error' : (session('info') ? 'toast-warning' : 'toast-success') }}" id="app-toast" role="status" aria-live="polite">
                             <div class="flex-1">{{ session('success') ?? session('info') ?? session('error') }}</div>

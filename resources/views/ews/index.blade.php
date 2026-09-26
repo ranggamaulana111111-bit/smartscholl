@@ -2,52 +2,52 @@
 
 @section('title', 'Early Warning System')
 @section('content')
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="font-display text-2xl font-semibold text-text">Early Warning System</h1>
-        <p class="text-sm text-text-muted mt-1">Peringatan dini terhadap siswa yang berisiko.</p>
-    </div>
+<x-page-head title="Early Warning System"
+    description="Peringatan dini terhadap siswa yang berisiko."
+    eyebrow="Perhatian">
     @if(auth()->user()->hasAnyRole(['super_admin', 'admin_sekolah']))
-        <form method="POST" action="{{ route('ews.runCheck') }}" class="inline">
-            @csrf
-            <button type="submit" class="btn btn-accent">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Jalankan Pemeriksaan
-            </button>
-        </form>
+        <x-slot name="actions">
+            <form method="POST" action="{{ route('ews.runCheck') }}" class="inline">
+                @csrf
+                <button type="submit" class="btn btn-accent">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Jalankan Pemeriksaan
+                </button>
+            </form>
+        </x-slot>
     @endif
-</div>
+</x-page-head>
 
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-    <div class="card p-5 text-center">
-        <p class="text-xs text-text-muted">Total</p>
-        <p class="font-display text-2xl font-semibold text-text mt-1">{{ $stats['total'] }}</p>
-    </div>
-    <div class="card p-5 text-center">
-        <p class="text-xs text-text-muted">Belum Diselesaikan</p>
-        <p class="font-display text-2xl font-semibold text-danger mt-1">{{ $stats['unresolved'] }}</p>
-    </div>
-    <div class="card p-5 text-center">
-        <p class="text-xs text-text-muted">Absen Berturut</p>
-        <p class="font-display text-2xl font-semibold text-text mt-1">{{ $stats['absence'] }}</p>
-    </div>
-    <div class="card p-5 text-center">
-        <p class="text-xs text-text-muted">Presensi Rendah</p>
-        <p class="font-display text-2xl font-semibold text-text mt-1">{{ $stats['attendance'] }}</p>
-    </div>
-    <div class="card p-5 text-center">
-        <p class="text-xs text-text-muted">Nilai Rendah</p>
-        <p class="font-display text-2xl font-semibold text-text mt-1">{{ $stats['low_score'] }}</p>
-    </div>
+<div class="bento mb-6">
+    @foreach([
+        ['label' => 'Total', 'value' => $stats['total']],
+        ['label' => 'Belum Diselesaikan', 'value' => $stats['unresolved'], 'class' => 'text-danger'],
+        ['label' => 'Absen Berturut', 'value' => $stats['absence']],
+        ['label' => 'Presensi Rendah', 'value' => $stats['attendance']],
+        ['label' => 'Nilai Rendah', 'value' => $stats['low_score']],
+    ] as $i => $stat)
+        <div class="bento-card lg:col-span-{{ $i === 0 ? '4' : '2' }}">
+            <div class="bento-card__body">
+                <p class="metric__label">{{ $stat['label'] }}</p>
+                <p class="metric__value mt-1 {{ $stat['class'] ?? '' }}">{{ $stat['value'] }}</p>
+            </div>
+        </div>
+    @endforeach
 </div>
 
 @if($logs->isEmpty())
-    <div class="card p-12 text-center">
-        <p class="text-text-muted">Tidak ada peringatan aktif saat ini.</p>
+    <div class="panel p-12 text-center">
+        <span class="empty-state__icon" aria-hidden="true">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </span>
+        <p class="empty-state__title">Tidak ada peringatan aktif</p>
+        <p class="empty-state__hint">Siswa terpantau dalam kondisi baik.</p>
     </div>
 @else
-    <div class="card overflow-hidden">
-        <div class="overflow-x-auto">
+    <div class="panel overflow-hidden">
+        <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -63,7 +63,7 @@
                     @foreach($logs as $log)
                         <tr class="{{ $log->is_resolved ? 'opacity-60' : '' }}">
                             <td class="text-text-muted">{{ $log->trigger_date?->translatedFormat('d M Y') }}</td>
-                            <td class="font-medium">{{ $log->student->name ?? '-' }}</td>
+                            <td class="font-medium text-text">{{ $log->student->name ?? '-' }}</td>
                             <td>
                                 <span class="badge {{ match($log->type) {
                                     'absence_streak' => 'badge-danger',
@@ -71,6 +71,7 @@
                                     'low_score' => 'badge-warning',
                                     default => '',
                                 } }}">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true"></span>
                                     {{ match($log->type) {
                                         'absence_streak' => 'Absen Berturut',
                                         'attendance_rate' => 'Presensi Rendah',
@@ -92,7 +93,7 @@
                                     <form method="POST" action="{{ route('ews.resolve', $log) }}" class="inline">
                                         @csrf
                                         <input type="hidden" name="note" value="">
-                                        <button type="submit" class="text-text-muted hover:text-accent text-sm transition-colors">Tandai Selesai</button>
+                                        <button type="submit" class="link">Tandai Selesai</button>
                                     </form>
                                 @endif
                             </td>

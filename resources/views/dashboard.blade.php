@@ -3,22 +3,19 @@
 @section('title', 'Dashboard')
 @section('content')
 <div class="space-y-8">
-    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-2">
         <div>
-            <p class="text-xs font-semibold uppercase tracking-widest text-accent">
-                {{ $stats['active_academic_year'] ?? ($user->tenant?->name ?? 'Smart School') }}
-            </p>
-            <h1 class="mt-2 text-3xl font-bold tracking-tight text-text">
+            <p class="eyebrow">{{ $user->tenant?->name ?? 'Smart School Enterprise' }}</p>
+            <h1 class="mt-3 display-title text-3xl lg:text-[40px]">
                 Selamat {{ now()->format('H') < 12 ? 'Pagi' : (now()->format('H') < 15 ? 'Siang' : 'Sore') }}, {{ $user->name }}.
             </h1>
-            <div class="mt-3 w-16 h-0.5 bg-accent"></div>
-            <p class="mt-4 text-sm text-text-muted">
-                {{ now()->translatedFormat('l, d F Y') }}
+            <p class="mt-3 text-[15px] text-text-muted">
+                {{ now()->translatedFormat('l, d F Y') }} &middot; ringkasan untuk peran Anda hari ini.
             </p>
         </div>
 
         @if($user->hasAnyRole(['super_admin', 'admin_sekolah', 'guru']))
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 shrink-0">
                 <a href="{{ route('attendance.manual') }}" class="btn btn-primary btn-sm">Absensi Manual</a>
                 <a href="{{ route('attendance.scan') }}" class="btn btn-accent btn-sm">Mode Scan</a>
                 <a href="{{ route('attendance.index') }}" class="btn btn-ghost btn-sm">Riwayat</a>
