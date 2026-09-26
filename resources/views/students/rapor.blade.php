@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rapor | {{ $student->name }}</title>
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|fira-code:400" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.6; color: #1a1a1a; background: #fff; padding: 32px; }
+        body { font-family: 'Montserrat', sans-serif; font-size: 13px; line-height: 1.6; color: #1a1a1a; background: #fff; padding: 32px; }
         .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #000; padding-bottom: 16px; margin-bottom: 24px; }
         .brand h1 { font-size: 18px; letter-spacing: -0.01em; }
         .brand p { color: #666; font-size: 12px; }
@@ -32,7 +32,7 @@
         .footer .sign { width: 200px; }
         .footer .sign .line { border-top: 1px solid #1a1a1a; margin-top: 48px; padding-top: 4px; text-align: center; font-size: 11px; }
         .no-print { margin-bottom: 16px; }
-        .no-print button { background: #000; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .no-print button { background: #000; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
         @media print {
             body { padding: 0; }
             .no-print { display: none; }

@@ -20,12 +20,20 @@ class RombelRequest extends FormRequest
         $tenantId = currentTenantId();
 
         return [
-            'academic_year_id' => ['required', Rule::exists('academic_years', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'academic_year_id' => [
+                'required',
+                Rule::exists('academic_years', 'id')->where(
+                    fn ($query) => $query->when($tenantId, fn ($scoped) => $scoped->where('tenant_id', $tenantId))
+                ),
+            ],
             'name' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('rombels')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('academic_year_id', $this->input('academic_year_id')))->ignore($rombelId),
+                Rule::unique('rombels')->where(
+                    fn ($query) => $query->where('academic_year_id', $this->input('academic_year_id'))
+                        ->when($tenantId, fn ($scoped) => $scoped->where('tenant_id', $tenantId))
+                )->ignore($rombelId),
             ],
             'grade_level' => ['required', 'string', 'max:10'],
             'homeroom_teacher_id' => ['nullable', 'integer', Rule::exists('teachers', 'id')->where(fn ($q) => $q->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId)))],
@@ -36,6 +44,7 @@ class RombelRequest extends FormRequest
     {
         return [
             'academic_year_id.required' => 'Tahun ajaran wajib dipilih.',
+            'academic_year_id.exists' => 'Tahun ajaran tidak ditemukan pada sekolah ini.',
             'name.required' => 'Nama rombel wajib diisi.',
             'name.unique' => 'Nama rombel sudah ada di tahun ajaran ini.',
             'grade_level.required' => 'Tingkat kelas wajib diisi.',

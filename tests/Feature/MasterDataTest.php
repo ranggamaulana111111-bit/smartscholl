@@ -149,6 +149,89 @@ class MasterDataTest extends TestCase
         ]);
     }
 
+    public function test_rombel_rejects_cross_tenant_academic_year(): void
+    {
+        $yearB = AcademicYear::factory()->create(['tenant_id' => $this->tenantB->id]);
+
+        $this->actingAs($this->adminA)
+            ->post(route('rombels.store'), [
+                'academic_year_id' => $yearB->id,
+                'name' => 'X-1',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => null,
+            ])
+            ->assertSessionHasErrors('academic_year_id');
+
+        $this->assertDatabaseMissing('rombels', ['name' => 'X-1']);
+    }
+
+    public function test_rombel_update_accepts_its_own_academic_year(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $rombel = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-2',
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->put(route('rombels.update', $rombel), [
+                'academic_year_id' => $year->id,
+                'name' => 'X-2',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => null,
+            ])
+            ->assertRedirect(route('rombels.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('rombels', ['id' => $rombel->id, 'name' => 'X-2']);
+    }
+
+    public function test_super_admin_can_update_rombel_without_tenant_scope(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        $rombel = Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-2',
+        ]);
+        $superAdmin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($superAdmin)
+            ->put(route('rombels.update', $rombel), [
+                'academic_year_id' => $year->id,
+                'name' => 'X-2',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => null,
+            ])
+            ->assertRedirect(route('rombels.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('rombels', ['id' => $rombel->id, 'name' => 'X-2']);
+    }
+
+    public function test_super_admin_rombel_name_stays_unique_per_academic_year(): void
+    {
+        $year = AcademicYear::factory()->create(['tenant_id' => $this->tenantA->id]);
+        Rombel::factory()->create([
+            'tenant_id' => $this->tenantA->id,
+            'academic_year_id' => $year->id,
+            'name' => 'X-1',
+        ]);
+        $superAdmin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($superAdmin)
+            ->post(route('rombels.store'), [
+                'academic_year_id' => $year->id,
+                'name' => 'X-1',
+                'grade_level' => 'X',
+                'homeroom_teacher_id' => null,
+            ])
+            ->assertSessionHasErrors('name');
+
+        $this->assertSame(1, Rombel::query()->where('name', 'X-1')->count());
+    }
+
     public function test_student_can_be_created_and_scoped(): void
     {
         $year = AcademicYear::factory()->active()->create(['tenant_id' => $this->tenantA->id]);

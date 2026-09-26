@@ -7,9 +7,9 @@
 @source "../**/*.vue";
 
 @theme {
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-    --font-mono: 'Fira Code', 'Courier New', monospace;
+    --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Montserrat', 'Segoe UI', sans-serif;
+    --font-mono: 'Montserrat', 'Segoe UI', sans-serif;
 
     --color-primary: #16345a;
     --color-primary-hover: #23508a;
