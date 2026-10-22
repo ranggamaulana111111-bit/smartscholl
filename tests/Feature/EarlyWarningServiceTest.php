@@ -52,19 +52,7 @@ class EarlyWarningServiceTest extends TestCase
 
     public function test_absence_streak_trigger(): void
     {
-        $cursor = now()->startOfDay();
-
-        while ($cursor->isWeekend()) {
-            $cursor->subDay();
-        }
-
-        $days = [];
-
-        for ($i = 0; $i < 3; $i++) {
-            $days[] = $cursor->copy()->subDays($i)->toDateString();
-        }
-
-        foreach ($days as $date) {
+        foreach ($this->schoolDaysEndingToday(3) as $date) {
             Attendance::factory()->alpha()->recordedAt($date, '08:00:00')->create([
                 'tenant_id' => $this->tenant->id,
                 'academic_year_id' => $this->year->id,
@@ -178,16 +166,38 @@ class EarlyWarningServiceTest extends TestCase
         $this->assertTrue($logs->every(fn ($log) => $log->student->rombel->homeroom_teacher_id === $teacher->id));
     }
 
-    private function seedAlphaStreak(): void
+    /**
+     * Tanggal hari sekolah berturut-turut, berakhir hari ini.
+     *
+     * Menghitung satu per satu lewat kalender, bukan `subDays($i)`, supaya
+     * deret yang dibentuk tidak pernah melewati akhir pekan. Kalau tidak,
+     * test hanya lulus pada hari tertentu dalam seminggu.
+     *
+     * @return array<int, string>
+     */
+    private function schoolDaysEndingToday(int $count): array
     {
+        $days = [];
         $cursor = now()->startOfDay();
 
-        while ($cursor->isWeekend()) {
+        while (count($days) < $count) {
+            if ($cursor->isWeekend()) {
+                $cursor->subDay();
+
+                continue;
+            }
+
+            $days[] = $cursor->toDateString();
             $cursor->subDay();
         }
 
-        for ($i = 0; $i < 3; $i++) {
-            Attendance::factory()->alpha()->recordedAt($cursor->copy()->subDays($i)->toDateString(), '08:00:00')->create([
+        return $days;
+    }
+
+    private function seedAlphaStreak(): void
+    {
+        foreach ($this->schoolDaysEndingToday(3) as $date) {
+            Attendance::factory()->alpha()->recordedAt($date, '08:00:00')->create([
                 'tenant_id' => $this->tenant->id,
                 'academic_year_id' => $this->year->id,
                 'student_id' => $this->student->id,

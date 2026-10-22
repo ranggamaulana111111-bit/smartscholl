@@ -106,13 +106,18 @@
         <input type="text" id="phone" name="phone" value="{{ old('phone', $student->phone) }}" maxlength="20" class="input">
     </div>
 
+    @include('students._account', ['account' => $student->user])
+
     <div class="flex items-center gap-3 pt-2 border-t border-border">
         <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
         <a href="{{ route('students.index') }}" class="btn btn-ghost">Batal</a>
-        <form method="POST" action="{{ route('students.regenerate-qr', $student) }}" class="ml-auto" data-confirm="Buat ulang token QR? Kartu QR lama tidak akan berlaku lagi.">
-            @csrf
-            <button type="submit" class="link text-sm">Regenerate token QR</button>
-        </form>
     </div>
 </form>
+
+<div class="mt-4 flex max-w-3xl justify-end">
+    <form method="POST" action="{{ route('students.regenerate-qr', $student) }}" data-confirm="Buat ulang token QR? Kartu QR lama tidak akan berlaku lagi.">
+        @csrf
+        <button type="submit" class="link text-sm">Regenerate token QR</button>
+    </form>
+</div>
 @endsection

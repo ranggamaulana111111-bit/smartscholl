@@ -77,7 +77,7 @@
                             <td>{{ $schedule->teacher->name ?? '-' }}</td>
                             <td><span class="badge">{{ $schedule->rombel->name ?? '-' }}</span></td>
                             <td class="text-text-muted whitespace-nowrap">
-                                {{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}
+                                {{ hariName($schedule->day_of_week) }}
                                 {{ $schedule->start_time?->format('H:i') }} - {{ $schedule->end_time?->format('H:i') }}
                             </td>
                         </tr>

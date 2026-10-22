@@ -5,7 +5,7 @@
             <div class="bento-card__header">
                 <div>
                     <p id="today-heading" class="metric__label">Jadwal Mengajar Hari Ini</p>
-                    <p class="metric__hint mt-1">{{ now()->translatedFormat('l, d F Y') }}</p>
+                    <p class="metric__hint mt-1">{{ hariName(now()->dayOfWeekIso) }}, {{ now()->format('d F Y') }}</p>
                 </div>
                 <a href="{{ route('schedules.index') }}" class="btn btn-ghost btn-sm shrink-0">Semua Jadwal</a>
             </div>
@@ -31,7 +31,10 @@
                                     <p class="text-sm font-semibold text-text truncate">{{ $s->subject->name ?? '-' }}</p>
                                     <p class="text-xs text-text-muted">{{ $s->rombel->name ?? '-' }}</p>
                                 </div>
-                                <a href="{{ route('attendance.manualMeetings', $s->id) }}" class="btn btn-primary btn-sm shrink-0">Absen</a>
+                                <div class="flex gap-2 shrink-0">
+                                    <a href="{{ route('attendance.schedule.scan.index', $s->id) }}" class="btn btn-accent btn-sm shrink-0">Scan</a>
+                                    <a href="{{ route('attendance.manualMeetings', $s->id) }}" class="btn btn-primary btn-sm shrink-0">Absen</a>
+                                </div>
                             </li>
                         @endforeach
                     </ol>

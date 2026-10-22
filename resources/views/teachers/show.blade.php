@@ -64,7 +64,7 @@
                     @foreach($schedules as $i => $schedule)
                         <tr>
                             <td class="text-text-muted">{{ $i + 1 }}</td>
-                            <td class="font-medium text-text">{{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}</td>
+                            <td class="font-medium text-text">{{ hariName($schedule->day_of_week) }}</td>
                             <td class="text-text-muted">{{ $schedule->subject->name ?? '-' }}</td>
                             <td>
                                 <span class="badge">{{ $schedule->rombel->name ?? '-' }}</span>

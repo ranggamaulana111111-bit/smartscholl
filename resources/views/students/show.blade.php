@@ -65,7 +65,21 @@
         </div>
         <div>
             <p class="text-xs text-text-muted uppercase">Akun Login</p>
-            <p class="mt-1 text-sm text-text">{{ $student->user?->email ?? '-' }}</p>
+            @if($student->user)
+                <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-text">
+                    <span class="font-mono">{{ $student->user->email }}</span>
+                    @if(auth()->user()->hasPermission('users.manage'))
+                        <a href="{{ route('users.edit', $student->user) }}" class="link text-xs">Atur kata sandi</a>
+                    @endif
+                </p>
+            @elseif(auth()->user()->hasPermission('users.manage'))
+                <p class="mt-1 text-sm text-text">
+                    <span class="text-text-muted">Belum dibuat.</span>
+                    <a href="{{ route('students.edit', $student) }}#student-account" class="link text-xs">Buat akun login</a>
+                </p>
+            @else
+                <p class="mt-1 text-sm text-text-muted">Belum dibuat.</p>
+            @endif
         </div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5 pt-5 border-t border-border">

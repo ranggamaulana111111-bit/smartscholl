@@ -161,10 +161,39 @@ Peran yang tersedia hanya lima: `super_admin`, `admin_sekolah`, `guru`, `siswa`,
 | EWS — resolve & run-check          | Super Admin & Admin Sekolah                                            |
 | Audit Trail                        | Super Admin & Admin Sekolah                                            |
 | Pengaturan                         | Super Admin & Admin Sekolah (tab Sistem khusus Super Admin)            |
+| Manajemen Pengguna                 | Super Admin & Admin Sekolah, lewat izin `users.manage`                 |
+| Matriks Hak Akses — lihat          | Super Admin & Admin Sekolah, lewat izin `permissions.view`              |
+| Matriks Hak Akses — ubah           | Super Admin, lewat izin `permissions.manage`                            |
+| Pengecualian akses per pengguna    | Super Admin, lewat izin `permissions.manage`                            |
 
 Seluruh query tenant-scoped memakai trait `BelongsToTenant` untuk menjamin isolasi antar sekolah.
 
 > **Batasan yang diketahui:** `BelongsToTenant::creating` mengisi `tenant_id` dari `Auth::user()->tenant_id`. Karena Super Admin tidak punya tenant, record yang ia buat tersimpan dengan `tenant_id = null`. Perilaku ini belum ditetapkan.
+
+### Izin (Permission)
+
+Peran tetap berupa enum lima nilai, tetapi **hak aksesnya** disimpan di database dan dapat diubah Super Admin lewat *Matriks Hak Akses*.
+
+| Tabel                | Isi                                                                     |
+| -------------------- | ----------------------------------------------------------------------- |
+| `permissions`        | Katalog izin: `name`, `label`, `group_key`. Tidak tenant-scoped.        |
+| `role_permissions`   | Izin bawaan per peran. Kolom `role` dipasangkan dengan `users.role`.    |
+| `user_permissions`   | Pengecualian per pengguna, `effect` = `grant` atau `deny`.              |
+
+`config/permissions.php` adalah sumber kebenaran katalog dan hak bawaan peran. Setelah mengubahnya, jalankan:
+
+```bash
+php artisan db:seed --class=PermissionSeeder
+```
+
+Seeder bersifat idempoten: izin yang dihapus dari config ikut terhapus, sedangkan penyesuaian yang sudah dilakukan lewat UI tidak ditimpa.
+
+Resolusi: izin dihitung berurutan dari `role_permissions`, lalu `user_permissions` menimpanya. `super_admin` selalu memegang seluruh izin secara langsung di `User::hasPermission()`, sehingga tidak memiliki kolom di matriks dan tidak mungkin terkunci keluar dari sistem.
+
+Dua lapis kontrol berjalan berdampingan:
+
+- `role:` middleware membatasi **peran** yang boleh mencapai rute.
+- `permission:` middleware membatasi **izin** yang harus dimiliki. Keduanya ditulis sebagai entri terpisah; menyatukannya dalam satu string koma membuat `permission:x` terbaca sebagai parameter `role:` dan tidak pernah dijalankan.
 
 ## Entity & Relasi Data
 

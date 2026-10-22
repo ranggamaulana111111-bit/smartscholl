@@ -253,7 +253,7 @@ class AttendanceTest extends TestCase
                 'date' => '2026-09-15',
                 'note' => 'Demam',
             ])
-            ->assertRedirect(route('attendance.manual'))
+            ->assertRedirect(route('attendance.manualSchedule', [$schedule->id, 'date' => '2026-09-15']))
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('attendances', [
@@ -265,6 +265,52 @@ class AttendanceTest extends TestCase
             'source' => 'manual',
             'note' => 'Demam',
         ]);
+    }
+
+    public function test_manual_lesson_returns_to_the_same_class_and_date(): void
+    {
+        $schedule = $this->makeSchedule($this->tenantA->id, $this->studentA->academic_year_id, null, $this->studentA->rombel_id, '2026-09-15');
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.storeManual'), [
+                'student_id' => $this->studentA->id,
+                'schedule_id' => $schedule->id,
+                'type' => 'lesson',
+                'status' => 'hadir',
+                'date' => '2026-09-15',
+            ])
+            ->assertRedirect(route('attendance.manualSchedule', [$schedule->id, 'date' => '2026-09-15']));
+
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.storeManual'), [
+                'student_id' => $this->studentA->id,
+                'schedule_id' => $schedule->id,
+                'type' => 'lesson',
+                'status' => 'alpha',
+                'date' => '2026-09-15',
+            ])
+            ->assertRedirect(route('attendance.manualSchedule', [$schedule->id, 'date' => '2026-09-15']))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('attendances', [
+            'student_id' => $this->studentA->id,
+            'schedule_id' => $schedule->id,
+            'status' => 'alpha',
+        ]);
+
+        $this->assertSame(1, Attendance::where('schedule_id', $schedule->id)->count());
+    }
+
+    public function test_gate_manual_returns_to_schedule_list(): void
+    {
+        $this->actingAs($this->adminA)
+            ->post(route('attendance.storeManual'), [
+                'student_id' => $this->studentA->id,
+                'type' => 'gate_in',
+                'status' => 'hadir',
+                'date' => '2026-09-15',
+            ])
+            ->assertRedirect(route('attendance.manual'));
     }
 
     public function test_manual_lesson_updates_existing_for_same_schedule(): void

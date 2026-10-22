@@ -10,7 +10,7 @@
                 Selamat {{ now()->format('H') < 12 ? 'Pagi' : (now()->format('H') < 15 ? 'Siang' : 'Sore') }}, {{ $user->name }}.
             </h1>
             <p class="mt-3 text-[15px] text-text-muted">
-                {{ now()->translatedFormat('l, d F Y') }} &middot; ringkasan untuk peran Anda hari ini.
+                {{ hariName(now()->dayOfWeekIso) }}, {{ now()->format('d F Y') }} &middot; ringkasan untuk peran Anda hari ini.
             </p>
         </div>
 

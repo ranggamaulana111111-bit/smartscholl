@@ -5,7 +5,23 @@
 <x-page-head title="Kartu QR Siswa"
     description="QR berisi token unik siswa, untuk scanner kehadiran gerbang."
     eyebrow="Absensi">
+    <x-slot name="actions">
+        <a href="{{ route('attendance.scan') }}" class="btn btn-ghost btn-sm">Buka Mode Scan</a>
+    </x-slot>
 </x-page-head>
+
+<form method="GET" action="{{ route('attendance.qrcodes') }}" class="panel p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-end gap-3">
+    <div class="flex-1 w-full">
+        <label for="rombel" class="label">Rombel</label>
+        <select name="rombel" id="rombel" class="input" onchange="this.form.submit()">
+            <option value="">Semua kelas</option>
+            @foreach($rombels as $rombel)
+                <option value="{{ $rombel->id }}" @selected($selectedRombel === $rombel->id)>{{ $rombel->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary shrink-0">Tampilkan</button>
+</form>
 
 <div class="bg-white border border-border rounded-md p-6 print:border-none print:p-0 print:shadow-none">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 card-grid">
@@ -41,19 +57,37 @@
 </div>
 
 <style>
-    @media print {
-        @page {
-            size: 210mm 297mm;
-            margin: 5mm;
-        }
+    @page {
+        size: 210mm 297mm;
+        margin: 5mm;
+    }
 
+    @media print {
         html, body {
             margin: 0;
             padding: 0;
         }
 
-        aside, nav { display: none !important; }
-        main { padding: 0 !important; }
+        .skip-link,
+        aside,
+        nav,
+        .site-header { display: none !important; }
+
+        .app-shell { min-height: 0 !important; }
+
+        .app-content { margin-left: 0 !important; }
+
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+        }
+
+        .page-enter {
+            animation: none;
+            opacity: 1;
+            transform: none;
+        }
 
         .card-grid {
             grid-template-columns: repeat(2, 85.6mm) !important;

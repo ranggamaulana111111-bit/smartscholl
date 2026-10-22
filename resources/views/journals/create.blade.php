@@ -21,7 +21,7 @@
                 <option value="">-- Tanpa jadwal --</option>
                 @foreach($schedules as $s)
                     <option value="{{ $s->id }}" @selected(old('schedule_id') ?? ($preselectScheduleId ?? '') == $s->id)>
-                        {{ \Carbon\Carbon::day($s->day_of_week)->translatedFormat('l') }} {{ $s->start_time?->format('H:i') }} - {{ $s->subject->name }} ({{ $s->rombel->name }})
+                        {{ hariName($s->day_of_week) }} {{ $s->start_time?->format('H:i') }} - {{ $s->subject->name }} ({{ $s->rombel->name }})
                     </option>
                 @endforeach
             </select>

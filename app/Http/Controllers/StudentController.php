@@ -10,6 +10,7 @@ use App\Models\EarlyWarningLog;
 use App\Models\Rombel;
 use App\Models\Student;
 use App\Models\StudentRombelHistory;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -36,11 +37,13 @@ class StudentController extends Controller
     public function store(StudentRequest $request): RedirectResponse
     {
         $student = DB::transaction(function () use ($request) {
-            $student = Student::create($request->validated());
+            $student = Student::create($request->studentPayload());
 
             if ($student->rombel_id) {
                 $this->openRombelHistory($student);
             }
+
+            $this->syncLoginAccount($request, $student);
 
             return $student;
         });
@@ -84,6 +87,8 @@ class StudentController extends Controller
 
     public function edit(Student $student): View
     {
+        $student->load('user');
+
         $rombels = Rombel::orderBy('name')->get();
 
         return view('students.edit', compact('student', 'rombels'));
@@ -95,7 +100,7 @@ class StudentController extends Controller
 
         DB::transaction(function () use ($request, $student) {
             $previousRombelId = $student->rombel_id;
-            $student->update($request->validated());
+            $student->update($request->studentPayload());
 
             if ($student->rombel_id !== $previousRombelId) {
                 if ($previousRombelId) {
@@ -106,6 +111,8 @@ class StudentController extends Controller
                     $this->openRombelHistory($student);
                 }
             }
+
+            $this->syncLoginAccount($request, $student);
         });
 
         log_audit('update', $student, $old, $student->only(['nisn', 'name', 'rombel_id']));
@@ -370,5 +377,47 @@ class StudentController extends Controller
             ->where('rombel_id', $rombelId)
             ->whereNull('left_at')
             ->update(['left_at' => today()->toDateString()]);
+    }
+
+    /**
+     * Membuat atau menautkan akun login role siswa ke baris siswa.
+     *
+     * Dipanggil di dalam transaksi yang sama dengan penyimpanan data pokok siswa
+     * supaya akun tidak pernah tertinggal bila salah satu sisi gagal. `tenant_id`
+     * selalu berasal dari sesi, tidak pernah dari input form.
+     */
+    private function syncLoginAccount(StudentRequest $request, Student $student): void
+    {
+        if (! $request->wantsAccount()) {
+            return;
+        }
+
+        $email = $request->accountEmail();
+        $password = $request->accountPassword();
+
+        if ($student->user_id) {
+            $account = $student->user()->firstOrFail();
+            $account->email = $email;
+
+            if ($password !== '') {
+                $account->password = $password;
+            }
+
+            $account->save();
+
+            return;
+        }
+
+        $account = new User([
+            'name' => $student->name,
+            'email' => $email,
+            'role' => 'siswa',
+            'tenant_id' => currentTenantId(),
+        ]);
+        $account->password = $password;
+        $account->save();
+
+        $student->user_id = $account->id;
+        $student->save();
     }
 }

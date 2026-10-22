@@ -9,6 +9,44 @@
 ></x-page-head>
 
 <div class="max-w-5xl">
+    @if($needsTenant)
+        <div class="panel p-6 mb-8 border-l-4 border-l-accent" role="status">
+            <p class="font-display text-lg font-semibold text-text">Pilih sekolah terlebih dahulu</p>
+            <p class="text-sm text-text-muted mt-1 max-w-2xl">
+                Pengaturan profil sekolah, penilaian, peringatan dini, dan kehadiran disimpan per sekolah.
+                Akun Super Admin tidak terikat pada satu sekolah, jadi sekolah tujuan harus dipilih
+                eksplisit sebelum nilainya bisa dibaca atau disimpan.
+            </p>
+            <form method="GET" action="{{ route('settings.index') }}" class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+                <div class="flex-1">
+                    <label for="tenant-picker" class="label">Sekolah</label>
+                    <select id="tenant-picker" name="tenant" class="input">
+                        <option value="">Pilih sekolah...</option>
+                        @foreach($tenants as $option)
+                            <option value="{{ $option->id }}">{{ $option->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary shrink-0">Buka Pengaturan</button>
+            </form>
+            @if($tenants->isEmpty())
+                <p class="text-sm text-danger mt-3">Belum ada sekolah berstatus aktif untuk diatur.</p>
+            @endif
+        </div>
+    @elseif($tenants->isNotEmpty())
+        <form method="GET" action="{{ route('settings.index') }}" class="mb-8 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <div class="flex-1">
+                <label for="tenant-picker" class="label">Sekolah yang diatur</label>
+                <select id="tenant-picker" name="tenant" class="input" onchange="this.form.submit()">
+                    @foreach($tenants as $option)
+                        <option value="{{ $option->id }}" @selected($option->id === $tenantId)>{{ $option->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <noscript><button type="submit" class="btn btn-ghost shrink-0">Ganti Sekolah</button></noscript>
+        </form>
+    @endif
+
     <div class="flex flex-wrap gap-2 mb-8" role="tablist" aria-label="Grup pengaturan">
         @foreach($groups as $key => $group)
             <button type="button" role="tab" id="tab-{{ $key }}" data-settings-tab="{{ $key }}"
@@ -30,14 +68,25 @@
 
             <p class="mb-6 text-xs text-text-muted">
                 {{ $group['tenant_scoped']
-                    ? 'Berlaku untuk sekolah: '.(auth()->user()->tenant->name ?? 'Sekolah aktif')
+                    ? 'Berlaku untuk sekolah: '.($tenantName ?? 'sekolah yang dipilih')
                     : 'Konfigurasi global aplikasi, hanya untuk Super Admin.' }}
             </p>
 
+            @if($group['tenant_scoped'] && ! $tenantId)
+                <div class="mb-6 rounded-lg border border-border bg-surface p-5">
+                    <p class="font-semibold text-text text-sm">Nilai belum ditampilkan</p>
+                    <p class="text-sm text-text-muted mt-1 max-w-2xl">
+                        Group ini disimpan per sekolah. Pilih sekolah di atas untuk melihat dan mengubah nilainya.
+                    </p>
+                </div>
+            @else
             <form method="POST" action="{{ route('settings.update') }}"
                 class="space-y-6 {{ $key === 'sekolah' ? 'max-w-4xl' : 'max-w-2xl' }}" novalidate>
                 @csrf
                 <input type="hidden" name="group" value="{{ $key }}">
+                @if($group['tenant_scoped'] && ! auth()->user()->tenant_id)
+                    <input type="hidden" name="tenant" value="{{ $tenantId }}">
+                @endif
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     @foreach($group['fields'] as $name => $field)
@@ -91,6 +140,7 @@
                     <button type="submit" class="btn btn-primary">Simpan {{ $group['label'] }}</button>
                 </div>
             </form>
+            @endif
         </div>
     @endforeach
 </div>

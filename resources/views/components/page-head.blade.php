@@ -7,7 +7,7 @@
         @endif
         <h1 class="mt-3 display-title text-3xl lg:text-4xl">{{ $title }}</h1>
         @if($description)
-            <p class="mt-3 text-[15px] text-text-muted leading-relaxed">{{ $description }}</p>
+            <p class="mt-3 text-[15px] text-text-muted leading-relaxed">{!! $description !!}</p>
         @endif
     </div>
     @isset($actions)

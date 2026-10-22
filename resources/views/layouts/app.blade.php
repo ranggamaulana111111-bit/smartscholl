@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', setting('sistem.app_name', 'Smart School'))</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700" rel="stylesheet" />
+    @include('partials.fonts')
+    <script>document.documentElement.classList.add('js');</script>
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -14,7 +14,7 @@
     <a href="#main-content" class="skip-link">Langsung ke konten</a>
 
     @auth
-        <div class="min-h-screen flex">
+        <div class="app-shell min-h-screen flex">
             <aside id="sidebar" class="hidden lg:flex w-[280px] shrink-0 bg-white border-r border-border flex-col fixed inset-y-0 left-0 z-30 overflow-y-auto" role="navigation" aria-label="Navigasi Utama">
                 <div class="px-5 pt-5 pb-5 border-b border-border">
                     <div class="flex items-center gap-3">
@@ -68,6 +68,7 @@
                             ['route' => 'attendance.index', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4"/>', 'label' => 'Absensi (Riwayat)'],
                             ['route' => 'attendance.scan', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-9 6l2 2 4-4"/>', 'label' => 'Mode Scan'],
                             ['route' => 'attendance.manual', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 5l2.636-4H9.364L12 5zm0 0v6m0-6l5.024 3.5L12 20 6.976 8.5z"/>', 'label' => 'Absensi Manual'],
+                            ['route' => 'attendance.qrcodes', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V5zM3 15a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4zm12 1h2m-2 4h4m-2-8h2"/>', 'label' => 'Kartu QR Siswa'],
                             ['route' => 'schedules.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 10h18M4 4h16v14H4V4z"/>', 'label' => 'Jadwal'],
                             ['route' => 'journals.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>', 'label' => 'Jurnal KBM'],
                             ['route' => 'assessments.*', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>', 'label' => 'Nilai'],
@@ -85,6 +86,20 @@
 
                     @if(auth()->user()->hasAnyRole(['super_admin', 'admin_sekolah']))
                         <p class="text-[11px] font-semibold uppercase tracking-wider text-text-muted px-3 pt-4 pb-1">Sistem</p>
+
+                        <a href="{{ route('users.index') }}"
+                           class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('users.*') ? $activeClass : $inactiveClass }}"
+                           @if(request()->routeIs('users.*')) aria-current="page" @endif>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            Pengguna
+                        </a>
+
+                        <a href="{{ route('permissions.index') }}"
+                           class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('permissions.*') ? $activeClass : $inactiveClass }}"
+                           @if(request()->routeIs('permissions.*')) aria-current="page" @endif>
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Hak Akses
+                        </a>
 
                         <a href="{{ route('audit-logs.index') }}"
                            class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg text-sm min-h-[44px] transition-colors duration-fast {{ request()->routeIs('audit-logs.*') ? $activeClass : $inactiveClass }}"
@@ -130,7 +145,7 @@
                 </div>
             </aside>
 
-            <div class="flex-1 lg:ml-[280px]">
+            <div class="app-content flex-1 min-w-0 lg:ml-[280px]">
                 <header class="site-header sticky top-0 z-20 border-b border-border h-16 flex items-center gap-4 px-4 lg:px-8">
                     <button id="sidebar-toggle" class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="sidebar">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -141,7 +156,7 @@
                     </div>
                     <div class="flex-1"></div>
                     <time class="hidden md:flex flex-col items-end leading-tight">
-                        <span class="text-sm font-semibold text-text">{{ now()->translatedFormat('l, d M Y') }}</span>
+                        <span class="text-sm font-semibold text-text">{{ hariName(now()->dayOfWeekIso) }}, {{ now()->format('d M Y') }}</span>
                         <span class="text-xs text-text-muted">{{ now()->translatedFormat('H:i') }} WIB</span>
                     </time>
                     <div class="flex items-center gap-3">

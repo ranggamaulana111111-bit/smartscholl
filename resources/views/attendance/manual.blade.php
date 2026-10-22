@@ -32,7 +32,7 @@
                 <a href="{{ route('attendance.manualMeetings', $sched->id) }}"
                     class="bento-card p-5 group" aria-label="Isi kehadiran {{ $sched->subject->name }} kelas {{ $sched->rombel->name }}">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="badge">{{ \Carbon\Carbon::day($sched->day_of_week)->translatedFormat('l') }}</span>
+                        <span class="badge">{{ hariName($sched->day_of_week) }}</span>
                         <span class="text-xs text-text-muted">{{ $sched->start_time->format('H:i') }} - {{ $sched->end_time->format('H:i') }}</span>
                     </div>
                     <h2 class="font-display text-lg font-semibold text-text">{{ $sched->subject->name }}</h2>

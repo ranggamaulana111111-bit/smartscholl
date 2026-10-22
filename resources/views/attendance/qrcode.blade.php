@@ -22,28 +22,57 @@
         </div>
     </div>
 
-    <div class="mt-5 flex flex-col items-center gap-2 print:hidden">
+    <div class="mt-5 flex flex-col items-center gap-3 print:hidden">
         <button onclick="window.print()" class="btn btn-primary btn-lg">
             Cetak Kartu
         </button>
-        <p class="text-xs text-text-muted">Kartu tercetak seukuran kartu ATM (85,6 &times; 54 mm).</p>
+        <p class="text-xs text-text-muted text-center max-w-xs">
+            Ukuran kartu 85,6 &times; 54 mm, sama seperti kartu ATM. Saat menyimpan PDF, biarkan
+            <strong>Skala 100%</strong>, <strong>Margin Default</strong>, dan nyalakan <strong>Grafik latar</strong>.
+        </p>
+        <p class="text-xs text-text-muted text-center max-w-xs">
+            Mencetak ke printer biasa? Atur kertas di dialog cetak ke <strong>85,6 &times; 54 mm</strong>
+            (atau A4 tanpa fit ke halaman), lalu potong mengikuti garis kartu.
+        </p>
     </div>
 </div>
 
 <style>
-    @media print {
-        @page {
-            size: 85.6mm 53.98mm;
-            margin: 0;
-        }
+    @page {
+        size: 85.6mm 53.98mm;
+        margin: 0;
+    }
 
+    @media print {
         html, body {
+            width: 85.6mm;
+            height: 53.98mm;
             margin: 0;
             padding: 0;
+            overflow: hidden;
+            background: #ffffff;
         }
 
-        aside, nav { display: none !important; }
-        main { padding: 0 !important; }
+        .skip-link,
+        aside,
+        nav,
+        .site-header { display: none !important; }
+
+        .app-shell { min-height: 0 !important; }
+
+        .app-content { margin-left: 0 !important; }
+
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+        }
+
+        .page-enter {
+            animation: none;
+            opacity: 1;
+            transform: none;
+        }
 
         .qr-card,
         .qr-card::after,

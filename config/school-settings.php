@@ -6,6 +6,7 @@ return [
         'description' => 'Identitas yang dicetak pada rapor resmi. Disimpan per sekolah.',
         'tenant_scoped' => true,
         'roles' => ['super_admin', 'admin_sekolah'],
+        'permission' => 'settings.school',
         'fields' => [
             'npsn' => ['label' => 'NPSN', 'type' => 'text', 'rules' => ['nullable', 'string', 'size:8'], 'default' => '', 'placeholder' => '8 digit'],
             'nss' => ['label' => 'NSS', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:18'], 'default' => '', 'placeholder' => 'contoh: 30.01.02.01.020'],
@@ -27,6 +28,7 @@ return [
         'description' => 'Pengaturan KKM dan bobot komponen nilai. Diterapkan pada rapor dan peringatan dini.',
         'tenant_scoped' => true,
         'roles' => ['super_admin', 'admin_sekolah'],
+        'permission' => 'settings.school',
         'fields' => [
             'kkm' => ['label' => 'KKM (Batas Tuntas)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:100'], 'default' => 75, 'hint' => 'Nilai di bawah KKM dihitung tidak tuntas.'],
             'bobot_tugas' => ['label' => 'Bobot Tugas (%)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:100'], 'default' => 20],
@@ -40,6 +42,7 @@ return [
         'description' => 'Ambang pemicu sistem peringatan dini (Early Warning System).',
         'tenant_scoped' => true,
         'roles' => ['super_admin', 'admin_sekolah'],
+        'permission' => 'settings.school',
         'fields' => [
             'absence_streak_days' => ['label' => 'Alpha Berturut-turut (hari)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:30'], 'default' => 3, 'hint' => 'Jumlah hari sekolah tanpa keterangan yang memicu peringatan.'],
             'attendance_rate_threshold' => ['label' => 'Ambang Presensi Kumulatif (%)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:100'], 'default' => 80, 'hint' => 'Peringatan muncul jika presensi kumulatif di bawah ambang ini.'],
@@ -50,8 +53,10 @@ return [
         'description' => 'Perilaku pencatatan absensi lewat ubah cara scan dan entri manual.',
         'tenant_scoped' => true,
         'roles' => ['super_admin', 'admin_sekolah'],
+        'permission' => 'settings.school',
         'fields' => [
             'lesson_scan_early_minutes' => ['label' => 'Toleransi Scan Pelajaran (menit awal)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:120'], 'default' => 15, 'hint' => 'Scan hadir pelajaran diterima berapa menit sebelum jam mulai.'],
+            'late_tolerance_minutes' => ['label' => 'Batas Terlambat (menit)', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:60'], 'default' => 10, 'hint' => 'Siswa yang datang sebelum batas ini tetap dihitung hadir tanpa menit keterlambatan. Angka ini hanya berlaku untuk pencatatan setelah disimpan, jadi mengubahnya tidak mengubah riwayat absensi lama.'],
             'scan_default_status' => ['label' => 'Status Default Hasil Scan', 'type' => 'select', 'options' => ['hadir' => 'Hadir', 'sakit' => 'Sakit', 'izin' => 'Izin'], 'rules' => ['required', 'in:hadir,sakit,izin'], 'default' => 'hadir'],
             'gate_out_without_gate_in_note' => ['label' => 'Catatan Pulang Tanpa Scan Masuk', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255'], 'default' => 'Pulang tanpa catatan masuk hari ini'],
         ],
@@ -61,6 +66,7 @@ return [
         'description' => 'Konfigurasi global aplikasi, hanya untuk Super Admin.',
         'tenant_scoped' => false,
         'roles' => ['super_admin'],
+        'permission' => 'settings.system',
         'fields' => [
             'app_name' => ['label' => 'Nama Aplikasi', 'type' => 'text', 'rules' => ['required', 'string', 'max:100'], 'default' => 'Smart School', 'hint' => 'Ditampilkan di judul halaman dan sidebar.'],
             'brand_glyph' => ['label' => 'Huruf Logo', 'type' => 'text', 'rules' => ['required', 'string', 'max:2'], 'default' => 'S', 'hint' => 'Satu huruf untuk lingkaran logo di sidebar.'],

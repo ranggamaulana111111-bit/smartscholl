@@ -99,6 +99,8 @@
         <input type="text" id="phone" name="phone" value="{{ old('phone') }}" maxlength="20" class="input">
     </div>
 
+    @include('students._account', ['account' => null])
+
     <div class="flex items-center gap-3 pt-2 border-t border-border">
         <button type="submit" class="btn btn-primary">Simpan Siswa</button>
         <a href="{{ route('students.index') }}" class="btn btn-ghost">Batal</a>

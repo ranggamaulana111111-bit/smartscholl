@@ -90,7 +90,7 @@
                                 <td class="font-medium text-text">{{ $schedule->subject->name ?? '-' }}</td>
                                 <td class="text-text-muted">{{ $schedule->teacher->name ?? '-' }}</td>
                                 <td class="text-text-muted whitespace-nowrap">
-                                    {{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }}
+                                    {{ hariName($schedule->day_of_week) }}
                                     {{ $schedule->start_time?->format('H:i') }} - {{ $schedule->end_time?->format('H:i') }}
                                 </td>
                             </tr>

@@ -4,8 +4,9 @@
 @section('content')
 <div class="max-w-4xl">
     <x-page-head title="Absen Manual Kelas {{ $schedule->rombel->name }}"
-        description="{{ $schedule->subject->name }} &middot; Hari {{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }} &middot; {{ $schedule->start_time->format('H:i') }}-{{ $schedule->end_time->format('H:i') }} &middot; Guru {{ $schedule->teacher->name }}">
+        description="{{ $schedule->subject->name }} &middot; Hari {{ hariName($schedule->day_of_week) }} &middot; {{ $schedule->start_time->format('H:i') }}-{{ $schedule->end_time->format('H:i') }} &middot; Guru {{ $schedule->teacher->name }}">
         <x-slot name="actions">
+            <a href="{{ route('attendance.schedule.scan.index', $schedule) }}" class="btn btn-primary btn-sm">Scan Kartu QR</a>
             <a href="{{ route('attendance.manual') }}" class="btn btn-ghost btn-sm">&larr; Jadwal Mengajar</a>
         </x-slot>
     </x-page-head>
@@ -41,7 +42,7 @@
                             <span class="badge">Belum diisi</span>
                         @endif
                     </div>
-                    <p class="text-sm text-text-muted">{{ $meeting['date']->translatedFormat('l, d M Y') }}</p>
+                    <p class="text-sm text-text-muted">{{ hariName($meeting['date']->dayOfWeekIso) }}, {{ $meeting['date']->format('d M Y') }}</p>
                     <p class="text-xs text-text-muted/70 mt-2">{{ $schedule->start_time->format('H:i') }} - {{ $schedule->end_time->format('H:i') }}</p>
                 </a>
             @endforeach

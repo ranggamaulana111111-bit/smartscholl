@@ -94,7 +94,7 @@ class DashboardController extends Controller
 
             $trend[] = [
                 'date' => $date->toDateString(),
-                'label' => $date->translatedFormat('D'),
+                'label' => hariPendek($date->dayOfWeekIso),
                 'present' => Attendance::whereDate('date', $date->toDateString())
                     ->where('status', 'hadir')
                     ->distinct('student_id')

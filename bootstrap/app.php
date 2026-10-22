@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SetTenant;
 use Illuminate\Foundation\Application;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => SetTenant::class,
             'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

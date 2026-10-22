@@ -20,7 +20,28 @@
             @endforeach
         </div>
 
-        <form method="POST" action="{{ route('attendance.record') }}" id="scan-form" class="space-y-4" autocomplete="off">
+        <div class="mt-4 panel p-5">
+            <h2 class="text-sm font-semibold text-text">Scan per Jadwal</h2>
+            <p class="text-xs text-text-muted mt-1">Pindai kartu siswa lewat kamera, dengan daftar rombel yang ikut terisi.</p>
+
+            @if($schedules->isEmpty())
+                <p class="text-sm text-text-muted mt-4">Tidak ada jadwal pelajaran hari ini.</p>
+            @else
+                <ul class="mt-4 divide-y divide-border">
+                    @foreach($schedules as $sched)
+                        <li class="flex items-center gap-3 py-2.5">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-text truncate">{{ $sched->start_time?->format('H:i') }} &middot; {{ $sched->subject->name ?? '-' }}</p>
+                                <p class="text-xs text-text-muted truncate">{{ $sched->rombel->name ?? '-' }}</p>
+                            </div>
+                            <a href="{{ route('attendance.schedule.scan.index', $sched->id) }}" class="btn btn-ghost btn-sm shrink-0">Buka Kamera</a>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+
+        <form method="POST" action="{{ route('attendance.record') }}" id="scan-form" class="mt-4 space-y-4" autocomplete="off">
             @csrf
             <input type="hidden" name="mode" value="{{ $mode }}">
 

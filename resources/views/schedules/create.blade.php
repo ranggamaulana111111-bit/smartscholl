@@ -53,7 +53,7 @@
             <select name="day_of_week" id="day_of_week" class="input @error('day_of_week') border-danger @enderror" aria-invalid="{{ $errors->has('day_of_week') ? 'true' : 'false' }}" aria-describedby="day_of_week-error">
                 <option value="">-- Pilih Hari --</option>
                 @for($d=1; $d<=7; $d++)
-                    <option value="{{ $d }}" @selected(old('day_of_week') == $d)>{{ \Carbon\Carbon::day($d)->translatedFormat('l') }}</option>
+                    <option value="{{ $d }}" @selected(old('day_of_week') == $d)>{{ hariName($d) }}</option>
                 @endfor
             </select>
             @error('day_of_week')<p id="day_of_week-error" class="error-text">{{ $message }}</p>@enderror

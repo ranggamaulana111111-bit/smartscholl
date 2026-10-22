@@ -4,7 +4,7 @@
 @section('content')
 <div class="max-w-3xl">
     <x-page-head title="Absen Manual Kelas {{ $schedule->rombel->name }}"
-        description="{{ $schedule->subject->name }} &middot; Hari {{ \Carbon\Carbon::day($schedule->day_of_week)->translatedFormat('l') }} &middot; {{ $schedule->start_time->format('H:i') }}-{{ $schedule->end_time->format('H:i') }} &middot; Guru {{ $schedule->teacher->name }} {{ $pertemuan ? '&middot; Pertemuan '.$pertemuan : '' }}">
+        description="{{ $schedule->subject->name }} &middot; Hari {{ hariName($schedule->day_of_week) }} &middot; {{ $schedule->start_time->format('H:i') }}-{{ $schedule->end_time->format('H:i') }} &middot; Guru {{ $schedule->teacher->name }} {{ $pertemuan ? '&middot; Pertemuan '.$pertemuan : '' }}">
         <x-slot name="actions">
             <a href="{{ route('attendance.manualMeetings', $schedule->id) }}" class="btn btn-ghost btn-sm">&larr; Pilih Pertemuan</a>
         </x-slot>

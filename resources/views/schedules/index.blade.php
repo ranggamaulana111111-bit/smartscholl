@@ -32,7 +32,6 @@
         <p class="empty-state__hint">Atur jadwal pelajaran untuk tenaga pengajar.</p>
     </div>
 @else
-    @php $dayLabels = [1=>'Senin',2=>'Selasa',3=>'Rabu',4=>'Kamis',5=>'Jumat',6=>'Sabtu',7=>'Minggu']; @endphp
     <div class="panel overflow-hidden">
         <div class="table-wrap">
             <table class="table">
@@ -49,7 +48,7 @@
                 <tbody>
                     @foreach($schedules as $s)
                         <tr>
-                            <td><span class="badge">{{ $dayLabels[$s->day_of_week] ?? '-' }}</span></td>
+                            <td><span class="badge">{{ hariName($s->day_of_week) }}</span></td>
                             <td class="text-text-muted">{{ $s->start_time?->format('H:i') }} - {{ $s->end_time?->format('H:i') }}</td>
                             <td class="font-medium text-text">{{ $s->subject->name ?? '-' }}</td>
                             <td class="text-text-muted">{{ $s->teacher->name ?? '-' }}</td>

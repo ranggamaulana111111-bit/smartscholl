@@ -24,6 +24,7 @@ class AttendanceFactory extends Factory
             'status' => 'hadir',
             'date' => now()->toDateString(),
             'time' => now()->format('H:i:s'),
+            'late_minutes' => null,
             'source' => 'scan',
             'note' => null,
         ];
